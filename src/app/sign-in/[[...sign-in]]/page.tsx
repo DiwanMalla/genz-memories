@@ -1,4 +1,4 @@
-import { SignIn } from '@clerk/nextjs';
+import { SignIn } from "@clerk/nextjs";
 
 export default function SignInPage() {
   return (
@@ -13,14 +13,14 @@ export default function SignInPage() {
           </p>
         </div>
         <div className="bg-gray-800/50 p-8 rounded-2xl border border-gray-700 backdrop-blur-sm">
-          <SignIn 
+          <SignIn
             appearance={{
               variables: {
-                colorPrimary: '#8B5CF6',
-                colorBackground: '#1f2937',
-                colorInputBackground: '#374151',
-                colorInputText: '#f9fafb',
-              }
+                colorPrimary: "#8B5CF6",
+                colorBackground: "#1f2937",
+                colorInputBackground: "#374151",
+                colorInputText: "#f9fafb",
+              },
             }}
           />
         </div>

@@ -1,8 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Heart, MessageCircle, Share2, MoreVertical, Play } from 'lucide-react';
-import Image from 'next/image';
+import { useState, useRef, useEffect } from "react";
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  MoreVertical,
+  Play,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import Image from "next/image";
 
 interface VideoCardProps {
   video: {
@@ -22,7 +30,7 @@ interface VideoCardProps {
     shares: number;
     hashtags: string[];
     location: string;
-    createdAt: Date;
+    createdAt: Date | string; // Allow both Date and string for API flexibility
   };
   isActive: boolean;
 }
@@ -32,6 +40,7 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes);
   const [mounted, setMounted] = useState(false);
+  const [isMuted, setIsMuted] = useState(false); // Start unmuted so users can hear audio
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Only mount on client to avoid hydration issues
@@ -40,16 +49,18 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
   }, []);
 
   const formatTimeAgo = () => {
-    if (!mounted) return '';
-    
+    if (!mounted) return "";
+
     const now = new Date();
-    const diffInMs = now.getTime() - video.createdAt.getTime();
+    // Ensure createdAt is a Date object, whether it comes as string or Date
+    const createdAt = new Date(video.createdAt);
+    const diffInMs = now.getTime() - createdAt.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInHours / 24);
-    
+
     if (diffInDays > 0) return `${diffInDays}d`;
     if (diffInHours > 0) return `${diffInHours}h`;
-    return 'now';
+    return "now";
   };
 
   useEffect(() => {
@@ -62,13 +73,16 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
     const handleEnded = () => setIsPlaying(false);
     const handleError = () => setIsPlaying(false);
 
-    videoElement.addEventListener('play', handlePlay);
-    videoElement.addEventListener('pause', handlePause);
-    videoElement.addEventListener('ended', handleEnded);
-    videoElement.addEventListener('error', handleError);
+    videoElement.addEventListener("play", handlePlay);
+    videoElement.addEventListener("pause", handlePause);
+    videoElement.addEventListener("ended", handleEnded);
+    videoElement.addEventListener("error", handleError);
 
     const handleVideoState = async () => {
       try {
+        // Set the muted state on the video element
+        videoElement.muted = isMuted;
+
         if (isActive && !videoElement.paused) {
           // Video should be playing
           if (videoElement.readyState >= 2) {
@@ -82,7 +96,7 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
         }
       } catch (error) {
         // Handle play/pause interruption gracefully
-        console.log('Video state change interrupted:', error);
+        console.log("Video state change interrupted:", error);
       }
     };
 
@@ -90,12 +104,12 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
 
     // Cleanup event listeners
     return () => {
-      videoElement.removeEventListener('play', handlePlay);
-      videoElement.removeEventListener('pause', handlePause);
-      videoElement.removeEventListener('ended', handleEnded);
-      videoElement.removeEventListener('error', handleError);
+      videoElement.removeEventListener("play", handlePlay);
+      videoElement.removeEventListener("pause", handlePause);
+      videoElement.removeEventListener("ended", handleEnded);
+      videoElement.removeEventListener("error", handleError);
     };
-  }, [isActive]);
+  }, [isActive, isMuted]);
 
   const togglePlay = async () => {
     const videoElement = videoRef.current;
@@ -111,14 +125,22 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
       }
     } catch (error) {
       // Handle play interruption gracefully
-      console.log('Video play interrupted:', error);
+      console.log("Video play interrupted:", error);
       setIsPlaying(false);
     }
   };
 
   const toggleLike = () => {
     setIsLiked(!isLiked);
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+  };
+
+  const toggleMute = () => {
+    const videoElement = videoRef.current;
+    if (videoElement) {
+      videoElement.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
   };
 
   const formatCount = (count: number) => {
@@ -135,7 +157,7 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
           ref={videoRef}
           className="w-full h-full object-cover rounded-lg"
           loop
-          muted
+          muted={isMuted}
           playsInline
           preload="metadata"
           poster={video.thumbnailUrl}
@@ -171,18 +193,23 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
             <div>
               <p className="text-white font-semibold">@{video.user.username}</p>
               <p className="text-gray-300 text-sm">
-                {video.location} • {formatTimeAgo()} {formatTimeAgo() && 'ago'}
+                {video.location} • {formatTimeAgo()} {formatTimeAgo() && "ago"}
               </p>
             </div>
           </div>
 
           {/* Video Title and Description */}
           <div className="mb-3">
-            <h3 className="text-white font-semibold text-lg mb-1">{video.title}</h3>
+            <h3 className="text-white font-semibold text-lg mb-1">
+              {video.title}
+            </h3>
             <p className="text-gray-200 text-sm mb-2">{video.description}</p>
             <div className="flex flex-wrap gap-1">
               {video.hashtags.map((tag) => (
-                <span key={tag} className="text-purple-400 text-sm hover:text-purple-300 cursor-pointer">
+                <span
+                  key={tag}
+                  className="text-purple-400 text-sm hover:text-purple-300 cursor-pointer"
+                >
                   {tag}
                 </span>
               ))}
@@ -197,16 +224,18 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
             <button
               onClick={toggleLike}
               className={`p-3 rounded-full ${
-                isLiked ? 'bg-red-500' : 'bg-black/30 backdrop-blur-sm'
+                isLiked ? "bg-red-500" : "bg-black/30 backdrop-blur-sm"
               } transition-all duration-300`}
             >
-              <Heart 
+              <Heart
                 className={`w-6 h-6 ${
-                  isLiked ? 'text-white fill-current' : 'text-white'
-                }`} 
+                  isLiked ? "text-white fill-current" : "text-white"
+                }`}
               />
             </button>
-            <span className="text-white text-sm mt-1">{formatCount(likesCount)}</span>
+            <span className="text-white text-sm mt-1">
+              {formatCount(likesCount)}
+            </span>
           </div>
 
           {/* Comment Button */}
@@ -214,7 +243,9 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
             <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
               <MessageCircle className="w-6 h-6 text-white" />
             </button>
-            <span className="text-white text-sm mt-1">{formatCount(video.comments)}</span>
+            <span className="text-white text-sm mt-1">
+              {formatCount(video.comments)}
+            </span>
           </div>
 
           {/* Share Button */}
@@ -222,7 +253,23 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
             <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
               <Share2 className="w-6 h-6 text-white" />
             </button>
-            <span className="text-white text-sm mt-1">{formatCount(video.shares)}</span>
+            <span className="text-white text-sm mt-1">
+              {formatCount(video.shares)}
+            </span>
+          </div>
+
+          {/* Mute/Unmute Button */}
+          <div className="flex flex-col items-center">
+            <button
+              onClick={toggleMute}
+              className="p-3 rounded-full bg-black/30 backdrop-blur-sm transition-all duration-300"
+            >
+              {isMuted ? (
+                <VolumeX className="w-6 h-6 text-white" />
+              ) : (
+                <Volume2 className="w-6 h-6 text-white" />
+              )}
+            </button>
           </div>
 
           {/* More Options */}

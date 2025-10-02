@@ -1,4 +1,4 @@
-import { SignUp } from '@clerk/nextjs';
+import { SignUp } from "@clerk/nextjs";
 
 export default function SignUpPage() {
   return (
@@ -9,18 +9,19 @@ export default function SignUpPage() {
             GenZ Memories
           </h1>
           <p className="text-gray-400 text-lg max-w-md">
-            Join the movement. Your voice matters. Every protest, every cause, every moment of change.
+            Join the movement. Your voice matters. Every protest, every cause,
+            every moment of change.
           </p>
         </div>
         <div className="bg-gray-800/50 p-8 rounded-2xl border border-gray-700 backdrop-blur-sm">
-          <SignUp 
+          <SignUp
             appearance={{
               variables: {
-                colorPrimary: '#8B5CF6',
-                colorBackground: '#1f2937',
-                colorInputBackground: '#374151',
-                colorInputText: '#f9fafb',
-              }
+                colorPrimary: "#8B5CF6",
+                colorBackground: "#1f2937",
+                colorInputBackground: "#374151",
+                colorInputText: "#f9fafb",
+              },
             }}
           />
         </div>

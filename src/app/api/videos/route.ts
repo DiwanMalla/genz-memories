@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
     const videos = await prisma.video.findMany({
       where: {
-        status: 'APPROVED',
+        status: "APPROVED",
       },
       include: {
         user: {
@@ -14,21 +14,21 @@ export async function GET() {
             username: true,
             name: true,
             avatar: true,
-          }
+          },
         },
         _count: {
           select: {
             likes: true,
             comments: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: "desc",
       },
     });
 
-    const formattedVideos = videos.map(video => ({
+    const formattedVideos = videos.map((video) => ({
       id: video.id,
       title: video.title,
       description: video.description,
@@ -39,9 +39,9 @@ export async function GET() {
       createdAt: video.createdAt,
       user: {
         id: video.user.id,
-        username: video.user.username || 'anonymous',
-        name: video.user.name || 'Anonymous User',
-        avatar: video.user.avatar || '/default-avatar.png',
+        username: video.user.username || "anonymous",
+        name: video.user.name || "Anonymous User",
+        avatar: video.user.avatar || "/default-avatar.png",
       },
       likes: video._count.likes,
       comments: video._count.comments,
@@ -51,9 +51,9 @@ export async function GET() {
 
     return NextResponse.json({ videos: formattedVideos });
   } catch (error) {
-    console.error('Failed to fetch videos:', error);
+    console.error("Failed to fetch videos:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch videos' },
+      { error: "Failed to fetch videos" },
       { status: 500 }
     );
   }

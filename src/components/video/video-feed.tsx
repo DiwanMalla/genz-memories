@@ -11,13 +11,16 @@ const mockVideos = [
     id: "1",
     title: "Climate March 2025",
     description: "Thousands gathered for climate action in downtown",
-    videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
+    videoUrl:
+      "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
     user: {
       id: "1",
       username: "activist_sarah",
       name: "Sarah Johnson",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b1e5?w=150&h=150&fit=crop&crop=face",
+      avatar:
+        "https://images.unsplash.com/photo-1494790108755-2616b612b1e5?w=150&h=150&fit=crop&crop=face",
     },
     likes: 1250,
     comments: 89,
@@ -30,13 +33,16 @@ const mockVideos = [
     id: "2",
     title: "Student Rights Protest",
     description: "University students demanding education reform",
-    videoUrl: "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1573164574511-73c773193279?w=400&h=600&fit=crop",
+    videoUrl:
+      "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4",
+    thumbnailUrl:
+      "https://images.unsplash.com/photo-1573164574511-73c773193279?w=400&h=600&fit=crop",
     user: {
       id: "2",
       username: "young_leader",
       name: "Alex Chen",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      avatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     },
     likes: 890,
     comments: 67,

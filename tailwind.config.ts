@@ -40,11 +40,11 @@ const config: Config = {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         // Custom colors for GenZ theme
-        'genz-purple': '#8B5CF6',
-        'genz-pink': '#EC4899',
-        'genz-blue': '#3B82F6',
-        'protest-red': '#EF4444',
-        'activism-green': '#10B981',
+        "genz-purple": "#8B5CF6",
+        "genz-pink": "#EC4899",
+        "genz-blue": "#3B82F6",
+        "protest-red": "#EF4444",
+        "activism-green": "#10B981",
       },
       animation: {
         "fade-in": "fadeIn 0.5s ease-in-out",
@@ -76,12 +76,12 @@ const config: Config = {
         mono: ["var(--font-geist-mono)"],
       },
       spacing: {
-        '18': '4.5rem',
-        '88': '22rem',
-        '128': '32rem',
+        "18": "4.5rem",
+        "88": "22rem",
+        "128": "32rem",
       },
       aspectRatio: {
-        '9/16': '9 / 16', // Vertical video ratio
+        "9/16": "9 / 16", // Vertical video ratio
       },
     },
   },

@@ -1,41 +1,43 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { useDropzone } from 'react-dropzone';
-import { X, Upload, Film, MapPin, Hash } from 'lucide-react';
-import { useVideos } from '@/contexts/video-context';
-import toast from 'react-hot-toast';
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import { X, Upload, Film, MapPin, Hash } from "lucide-react";
+import { useVideos } from "@/contexts/video-context";
+import toast from "react-hot-toast";
 
 interface VideoUploadProps {
   onClose: () => void;
 }
 
 export function VideoUpload({ onClose }: VideoUploadProps) {
-  const [uploadStep, setUploadStep] = useState<'select' | 'details' | 'uploading'>('select');
+  const [uploadStep, setUploadStep] = useState<
+    "select" | "details" | "uploading"
+  >("select");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string>('');
+  const [videoPreview, setVideoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    location: '',
-    hashtags: '',
+    title: "",
+    description: "",
+    location: "",
+    hashtags: "",
   });
-  
+
   const { addVideo } = useVideos();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
-    if (file && file.type.startsWith('video/')) {
+    if (file && file.type.startsWith("video/")) {
       setSelectedFile(file);
       setVideoPreview(URL.createObjectURL(file));
-      setUploadStep('details');
+      setUploadStep("details");
     }
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'video/*': ['.mp4', '.mov', '.avi', '.webm']
+      "video/*": [".mp4", ".mov", ".avi", ".webm"],
     },
     maxFiles: 1,
     maxSize: 100 * 1024 * 1024, // 100MB
@@ -43,33 +45,33 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!selectedFile || !formData.title.trim()) {
-      toast.error('Please provide a title and select a video file');
+      toast.error("Please provide a title and select a video file");
       return;
     }
-    
-    setUploadStep('uploading');
-    
+
+    setUploadStep("uploading");
+
     try {
       // Create FormData for multipart upload
       const uploadFormData = new FormData();
-      uploadFormData.append('video', selectedFile);
-      uploadFormData.append('title', formData.title.trim());
-      uploadFormData.append('description', formData.description.trim());
-      uploadFormData.append('location', formData.location.trim());
-      uploadFormData.append('hashtags', formData.hashtags.trim());
+      uploadFormData.append("video", selectedFile);
+      uploadFormData.append("title", formData.title.trim());
+      uploadFormData.append("description", formData.description.trim());
+      uploadFormData.append("location", formData.location.trim());
+      uploadFormData.append("hashtags", formData.hashtags.trim());
 
       // Upload to API
-      const response = await fetch('/api/videos/upload', {
-        method: 'POST',
+      const response = await fetch("/api/videos/upload", {
+        method: "POST",
         body: uploadFormData,
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Upload failed');
+        throw new Error(result.error || "Upload failed");
       }
 
       // Add video to feed context
@@ -81,27 +83,30 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
         hashtags: result.video.hashtags,
         location: result.video.location,
       });
-      
+
       // Close modal and reset form
       onClose();
       resetUpload();
-      
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload video. Please try again.');
-      setUploadStep('details');
+      console.error("Upload error:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to upload video. Please try again."
+      );
+      setUploadStep("details");
     }
   };
 
   const resetUpload = () => {
     setSelectedFile(null);
-    setVideoPreview('');
-    setUploadStep('select');
+    setVideoPreview("");
+    setUploadStep("select");
     setFormData({
-      title: '',
-      description: '',
-      location: '',
-      hashtags: '',
+      title: "",
+      description: "",
+      location: "",
+      hashtags: "",
     });
   };
 
@@ -111,9 +116,9 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">
-            {uploadStep === 'select' && 'Upload Video'}
-            {uploadStep === 'details' && 'Add Details'}
-            {uploadStep === 'uploading' && 'Uploading...'}
+            {uploadStep === "select" && "Upload Video"}
+            {uploadStep === "details" && "Add Details"}
+            {uploadStep === "uploading" && "Uploading..."}
           </h2>
           <button
             onClick={onClose}
@@ -125,13 +130,13 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
 
         {/* Content */}
         <div className="p-6">
-          {uploadStep === 'select' && (
+          {uploadStep === "select" && (
             <div
               {...getRootProps()}
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
                 isDragActive
-                  ? 'border-purple-500 bg-purple-500/10'
-                  : 'border-gray-600 hover:border-gray-500'
+                  ? "border-purple-500 bg-purple-500/10"
+                  : "border-gray-600 hover:border-gray-500"
               }`}
             >
               <input {...getInputProps()} />
@@ -140,8 +145,12 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
                 <p className="text-purple-400">Drop your video here...</p>
               ) : (
                 <>
-                  <p className="text-gray-300 mb-2">Drag and drop your video here</p>
-                  <p className="text-gray-500 text-sm mb-4">or click to browse</p>
+                  <p className="text-gray-300 mb-2">
+                    Drag and drop your video here
+                  </p>
+                  <p className="text-gray-500 text-sm mb-4">
+                    or click to browse
+                  </p>
                   <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full transition-colors">
                     <Upload className="w-4 h-4 inline mr-2" />
                     Choose Video
@@ -154,7 +163,7 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
             </div>
           )}
 
-          {uploadStep === 'details' && (
+          {uploadStep === "details" && (
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Video Preview */}
               {videoPreview && (
@@ -177,7 +186,12 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
                     type="text"
                     required
                     value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        title: e.target.value,
+                      }))
+                    }
                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
                     placeholder="Give your video a title..."
                   />
@@ -189,7 +203,12 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
                   </label>
                   <textarea
                     value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none resize-none"
                     rows={3}
                     placeholder="Tell people what this video is about..."
@@ -204,7 +223,12 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
                   <input
                     type="text"
                     value={formData.location}
-                    onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        location: e.target.value,
+                      }))
+                    }
                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
                     placeholder="Where was this filmed?"
                   />
@@ -218,7 +242,12 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
                   <input
                     type="text"
                     value={formData.hashtags}
-                    onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        hashtags: e.target.value,
+                      }))
+                    }
                     className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:border-purple-500 focus:outline-none"
                     placeholder="#protest #activism #change"
                   />
@@ -244,13 +273,18 @@ export function VideoUpload({ onClose }: VideoUploadProps) {
             </form>
           )}
 
-          {uploadStep === 'uploading' && (
+          {uploadStep === "uploading" && (
             <div className="text-center py-12">
               <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h3 className="text-lg font-semibold text-white mb-2">Uploading your video...</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">
+                Uploading your video...
+              </h3>
               <p className="text-gray-400">This may take a few moments</p>
               <div className="w-full bg-gray-700 rounded-full h-2 mt-6">
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                <div
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 h-2 rounded-full animate-pulse"
+                  style={{ width: "60%" }}
+                ></div>
               </div>
             </div>
           )}

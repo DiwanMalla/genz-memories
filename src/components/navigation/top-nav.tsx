@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Search, Bell, MessageCircle } from 'lucide-react';
-import { UserButton } from '@clerk/nextjs';
-import Link from 'next/link';
+import { useState } from "react";
+import { Search, Bell, MessageCircle } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 
 export function TopNavigation() {
   const [showSearch, setShowSearch] = useState(false);
@@ -12,8 +12,8 @@ export function TopNavigation() {
     <div className="fixed top-0 left-0 right-0 bg-black/90 backdrop-blur-md border-b border-gray-800 z-40">
       <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
         {/* Left Side */}
-        <Link 
-          href="/feed" 
+        <Link
+          href="/feed"
           className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent"
         >
           GenZ
@@ -51,11 +51,11 @@ export function TopNavigation() {
 
           {/* User Menu */}
           <div className="scale-90">
-            <UserButton 
+            <UserButton
               appearance={{
                 elements: {
-                  avatarBox: 'w-8 h-8',
-                }
+                  avatarBox: "w-8 h-8",
+                },
               }}
             />
           </div>

@@ -1,25 +1,29 @@
-'use client';
+"use client";
 
-import dynamic from 'next/dynamic';
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { useVideos } from '@/contexts/video-context';
+import dynamic from "next/dynamic";
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { useVideos } from "@/contexts/video-context";
 
 // Import VideoCard dynamically with no SSR to prevent hydration issues
-const VideoCard = dynamic(() => import('./video-card').then(mod => ({ default: mod.VideoCard })), {
-  ssr: false,
-  loading: () => (
-    <div className="relative h-screen w-full bg-black flex items-center justify-center">
-      <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"></div>
-    </div>
-  ),
-});
+const VideoCard = dynamic(
+  () => import("./video-card").then((mod) => ({ default: mod.VideoCard })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="relative h-screen w-full bg-black flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+      </div>
+    ),
+  }
+);
 
-const VideoUpload = dynamic(() => import('./video-upload').then(mod => ({ default: mod.VideoUpload })), {
-  ssr: false,
-});
-
-
+const VideoUpload = dynamic(
+  () => import("./video-upload").then((mod) => ({ default: mod.VideoUpload })),
+  {
+    ssr: false,
+  }
+);
 
 export function VideoFeed() {
   const [showUpload, setShowUpload] = useState(false);

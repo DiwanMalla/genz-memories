@@ -5,6 +5,7 @@ A modern social media platform dedicated to preserving Gen Z protest movements a
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ (Recommended: 20+)
 - PostgreSQL or MongoDB
 - npm or pnpm
@@ -13,30 +14,34 @@ A modern social media platform dedicated to preserving Gen Z protest movements a
 ### Development Setup
 
 1. **Clone and install dependencies**
+
    ```bash
    cd genz-memories
    npm install
    ```
 
 2. **Environment Setup**
+
    ```bash
    cp .env.example .env.local
    # Update .env.local with your configurations
    ```
 
 3. **Database Setup**
+
    ```bash
    # Generate Prisma client
    npm run db:generate
-   
+
    # Push database schema
    npm run db:push
-   
+
    # (Optional) Open Prisma Studio
    npm run db:studio
    ```
 
 4. **Start Development**
+
    ```bash
    npm run dev
    ```

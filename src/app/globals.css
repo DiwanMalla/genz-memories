@@ -20,8 +20,6 @@
   --ring: 0 0% 83.1%;
 }
 
-
-
 body {
   background: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -58,13 +56,25 @@ body {
 
 /* GenZ themed gradients */
 .genz-gradient {
-  background: linear-gradient(135deg, var(--color-genz-purple), var(--color-genz-pink));
+  background: linear-gradient(
+    135deg,
+    var(--color-genz-purple),
+    var(--color-genz-pink)
+  );
 }
 
 .protest-gradient {
-  background: linear-gradient(135deg, var(--color-protest-red), var(--color-genz-pink));
+  background: linear-gradient(
+    135deg,
+    var(--color-protest-red),
+    var(--color-genz-pink)
+  );
 }
 
 .activism-gradient {
-  background: linear-gradient(135deg, var(--color-genz-blue), var(--color-activism-green));
+  background: linear-gradient(
+    135deg,
+    var(--color-genz-blue),
+    var(--color-activism-green)
+  );
 }
