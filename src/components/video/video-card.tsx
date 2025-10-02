@@ -33,9 +33,11 @@ interface VideoCardProps {
     createdAt: Date | string; // Allow both Date and string for API flexibility
   };
   isActive: boolean;
+  layout?: "mobile" | "desktop";
+  onClick?: () => void;
 }
 
-export function VideoCard({ video, isActive }: VideoCardProps) {
+export function VideoCard({ video, isActive, layout = "mobile", onClick }: VideoCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes);
@@ -149,134 +151,252 @@ export function VideoCard({ video, isActive }: VideoCardProps) {
     return count.toString();
   };
 
+  // Mobile Layout (TikTok-style)
+  if (layout === "mobile") {
+    return (
+      <div className="relative h-screen w-full bg-black flex items-center justify-center">
+        {/* Video Player */}
+        <div className="relative w-full h-full max-w-md mx-auto">
+          <video
+            ref={videoRef}
+            className="w-full h-full object-cover rounded-lg"
+            loop
+            muted={isMuted}
+            playsInline
+            preload="metadata"
+            poster={video.thumbnailUrl}
+            onClick={togglePlay}
+            suppressHydrationWarning
+          >
+            <source src={video.videoUrl} type="video/mp4" />
+          </video>
+
+          {/* Play/Pause Overlay */}
+          {!isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <button
+                onClick={togglePlay}
+                className="bg-white/20 backdrop-blur-sm p-4 rounded-full"
+              >
+                <Play className="w-8 h-8 text-white" />
+              </button>
+            </div>
+          )}
+
+          {/* Video Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+            {/* User Info */}
+            <div className="flex items-center gap-3 mb-3">
+              <Image
+                src={video.user.avatar}
+                alt={video.user.name}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full border-2 border-white object-cover"
+              />
+              <div>
+                <p className="text-white font-semibold">@{video.user.username}</p>
+                <p className="text-gray-300 text-sm">
+                  {video.location} • {formatTimeAgo()} {formatTimeAgo() && "ago"}
+                </p>
+              </div>
+            </div>
+
+            {/* Video Title and Description */}
+            <div className="mb-3">
+              <h3 className="text-white font-semibold text-lg mb-1">
+                {video.title}
+              </h3>
+              <p className="text-gray-200 text-sm mb-2">{video.description}</p>
+              <div className="flex flex-wrap gap-1">
+                {video.hashtags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-purple-400 text-sm hover:text-purple-300 cursor-pointer"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4">
+            {/* Like Button */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={toggleLike}
+                className={`p-3 rounded-full ${
+                  isLiked ? "bg-red-500" : "bg-black/30 backdrop-blur-sm"
+                } transition-all duration-300`}
+              >
+                <Heart
+                  className={`w-6 h-6 ${
+                    isLiked ? "text-white fill-current" : "text-white"
+                  }`}
+                />
+              </button>
+              <span className="text-white text-sm mt-1">
+                {formatCount(likesCount)}
+              </span>
+            </div>
+
+            {/* Comment Button */}
+            <div className="flex flex-col items-center">
+              <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
+                <MessageCircle className="w-6 h-6 text-white" />
+              </button>
+              <span className="text-white text-sm mt-1">
+                {formatCount(video.comments)}
+              </span>
+            </div>
+
+            {/* Share Button */}
+            <div className="flex flex-col items-center">
+              <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
+                <Share2 className="w-6 h-6 text-white" />
+              </button>
+              <span className="text-white text-sm mt-1">
+                {formatCount(video.shares)}
+              </span>
+            </div>
+
+            {/* Mute/Unmute Button */}
+            <div className="flex flex-col items-center">
+              <button
+                onClick={toggleMute}
+                className="p-3 rounded-full bg-black/30 backdrop-blur-sm transition-all duration-300"
+              >
+                {isMuted ? (
+                  <VolumeX className="w-6 h-6 text-white" />
+                ) : (
+                  <Volume2 className="w-6 h-6 text-white" />
+                )}
+              </button>
+            </div>
+
+            {/* More Options */}
+            <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
+              <MoreVertical className="w-6 h-6 text-white" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop Layout (YouTube/Netflix Style)
   return (
-    <div className="relative h-screen w-full bg-black flex items-center justify-center">
-      {/* Video Player */}
-      <div className="relative w-full h-full max-w-md mx-auto">
+    <div 
+      className="group cursor-pointer"
+      onClick={() => {
+        onClick?.();
+      }}
+    >
+      {/* Video Thumbnail */}
+      <div className="relative aspect-video bg-gray-900 rounded-xl overflow-hidden mb-3">
         <video
           ref={videoRef}
-          className="w-full h-full object-cover rounded-lg"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loop
           muted={isMuted}
           playsInline
           preload="metadata"
           poster={video.thumbnailUrl}
-          onClick={togglePlay}
+          onClick={(e) => {
+            e.stopPropagation();
+            togglePlay();
+          }}
           suppressHydrationWarning
         >
           <source src={video.videoUrl} type="video/mp4" />
         </video>
 
-        {/* Play/Pause Overlay */}
+        {/* Play Button (YouTube style) */}
         {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-            <button
-              onClick={togglePlay}
-              className="bg-white/20 backdrop-blur-sm p-4 rounded-full"
-            >
-              <Play className="w-8 h-8 text-white" />
-            </button>
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="bg-black/80 p-3 rounded-full">
+              <Play className="w-6 h-6 text-white fill-white" />
+            </div>
           </div>
         )}
 
-        {/* Video Info Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          {/* User Info */}
-          <div className="flex items-center gap-3 mb-3">
-            <Image
-              src={video.user.avatar}
-              alt={video.user.name}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full border-2 border-white object-cover"
-            />
-            <div>
-              <p className="text-white font-semibold">@{video.user.username}</p>
-              <p className="text-gray-300 text-sm">
-                {video.location} • {formatTimeAgo()} {formatTimeAgo() && "ago"}
-              </p>
-            </div>
-          </div>
-
-          {/* Video Title and Description */}
-          <div className="mb-3">
-            <h3 className="text-white font-semibold text-lg mb-1">
-              {video.title}
-            </h3>
-            <p className="text-gray-200 text-sm mb-2">{video.description}</p>
-            <div className="flex flex-wrap gap-1">
-              {video.hashtags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-purple-400 text-sm hover:text-purple-300 cursor-pointer"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
+        {/* Duration Badge */}
+        <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+          2:34
         </div>
 
-        {/* Action Buttons */}
-        <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4">
-          {/* Like Button */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={toggleLike}
-              className={`p-3 rounded-full ${
-                isLiked ? "bg-red-500" : "bg-black/30 backdrop-blur-sm"
-              } transition-all duration-300`}
-            >
-              <Heart
-                className={`w-6 h-6 ${
-                  isLiked ? "text-white fill-current" : "text-white"
-                }`}
-              />
-            </button>
-            <span className="text-white text-sm mt-1">
-              {formatCount(likesCount)}
-            </span>
-          </div>
-
-          {/* Comment Button */}
-          <div className="flex flex-col items-center">
-            <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
-              <MessageCircle className="w-6 h-6 text-white" />
-            </button>
-            <span className="text-white text-sm mt-1">
-              {formatCount(video.comments)}
-            </span>
-          </div>
-
-          {/* Share Button */}
-          <div className="flex flex-col items-center">
-            <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
-              <Share2 className="w-6 h-6 text-white" />
-            </button>
-            <span className="text-white text-sm mt-1">
-              {formatCount(video.shares)}
-            </span>
-          </div>
-
-          {/* Mute/Unmute Button */}
-          <div className="flex flex-col items-center">
-            <button
-              onClick={toggleMute}
-              className="p-3 rounded-full bg-black/30 backdrop-blur-sm transition-all duration-300"
-            >
-              {isMuted ? (
-                <VolumeX className="w-6 h-6 text-white" />
-              ) : (
-                <Volume2 className="w-6 h-6 text-white" />
-              )}
-            </button>
-          </div>
-
-          {/* More Options */}
-          <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
-            <MoreVertical className="w-6 h-6 text-white" />
+        {/* Quick Actions (Netflix style) */}
+        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleLike();
+            }}
+            className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
+              isLiked ? "bg-red-600 text-white" : "bg-black/60 text-white hover:bg-black/80"
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+          </button>
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleMute();
+            }}
+            className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-colors"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </button>
         </div>
+
+        {/* Live/Trending Badge */}
+        {Math.random() > 0.7 && (
+          <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+            LIVE
+          </div>
+        )}
+      </div>
+
+      {/* Video Info (YouTube style) */}
+      <div className="flex gap-3">
+        {/* User Avatar */}
+        <div className="flex-shrink-0">
+          <Image
+            src={video.user.avatar}
+            alt={video.user.name}
+            width={36}
+            height={36}
+            className="w-9 h-9 rounded-full object-cover"
+          />
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title */}
+          <h3 className="text-white font-medium text-sm leading-tight mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
+            {video.title}
+          </h3>
+          
+          {/* Channel Name */}
+          <p className="text-gray-400 text-xs mb-1 hover:text-white transition-colors cursor-pointer">
+            {video.user.username}
+          </p>
+          
+          {/* Views and Time */}
+          <div className="flex items-center text-gray-400 text-xs space-x-1">
+            <span>{formatCount(video.likes + video.comments * 10)} views</span>
+            <span>•</span>
+            <span>{formatTimeAgo()}</span>
+          </div>
+        </div>
+
+        {/* More Options */}
+        <button className="flex-shrink-0 p-1 hover:bg-gray-800 rounded-full transition-colors opacity-0 group-hover:opacity-100">
+          <MoreVertical className="w-4 h-4 text-gray-400" />
+        </button>
       </div>
     </div>
   );

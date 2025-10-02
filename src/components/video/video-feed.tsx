@@ -55,37 +55,72 @@ const mockVideos = [
 
 export function VideoFeed() {
   const [showUpload, setShowUpload] = useState(false);
+  const [activeVideoId, setActiveVideoId] = useState(mockVideos[0]?.id);
 
   return (
     <div className="relative">
-      {/* Mobile-first TikTok-style feed */}
-      <div className="md:max-w-md mx-auto">
-        {/* Upload Button */}
-        <div className="fixed bottom-6 right-6 z-50">
-          <button
-            onClick={() => setShowUpload(true)}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-full shadow-lg hover:scale-110 transition-all duration-300"
-          >
-            <Plus className="w-6 h-6" />
-          </button>
-        </div>
+      {/* Upload Button */}
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => setShowUpload(true)}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-full shadow-lg hover:scale-110 transition-all duration-300"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
 
-        {/* Video Cards */}
-        <div className="space-y-0">
-          {mockVideos.map((video, index) => (
-            <VideoCard
-              key={video.id}
-              video={video}
-              isActive={index === 0} // First video is active by default
-            />
-          ))}
+      {/* Responsive Layout */}
+      {/* Mobile: TikTok-style vertical feed */}
+      <div className="block lg:hidden">
+        <div className="max-w-md mx-auto">
+          <div className="space-y-0">
+            {mockVideos.map((video, index) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                isActive={index === 0} // First video is active by default
+                layout="mobile"
+              />
+            ))}
+          </div>
         </div>
+      </div>
 
-        {/* Loading indicator */}
-        <div className="py-8 text-center text-gray-500">
-          <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-2">Loading more videos...</p>
+      {/* Desktop/Tablet: Grid Layout */}
+      <div className="hidden lg:block">
+        <div className="container mx-auto px-6 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">Discover Stories</h1>
+            <p className="text-gray-400">Explore powerful voices and movements from Generation Z</p>
+          </div>
+
+          {/* Video Grid */}
+          <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+            {mockVideos.map((video) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                isActive={activeVideoId === video.id}
+                layout="desktop"
+                onClick={() => setActiveVideoId(video.id)}
+              />
+            ))}
+          </div>
+
+          {/* Load More */}
+          <div className="flex justify-center mt-12">
+            <button className="bg-gray-800 hover:bg-gray-700 text-white px-8 py-3 rounded-full transition-colors">
+              Load More Videos
+            </button>
+          </div>
         </div>
+      </div>
+
+      {/* Loading indicator for mobile */}
+      <div className="lg:hidden py-8 text-center text-gray-500">
+        <div className="animate-spin w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full mx-auto"></div>
+        <p className="mt-2">Loading more videos...</p>
       </div>
 
       {/* Upload Modal */}
