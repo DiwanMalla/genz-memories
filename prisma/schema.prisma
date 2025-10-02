@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or "mysql", "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id // This will be the Clerk user ID
+  email     String   @unique
+  username  String   @unique
+  name      String?
+  bio       String?
+  avatar    String?
+  verified  Boolean  @default(false)
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Social features
+  videos    Video[]
+  likes     Like[]
+  comments  Comment[]
+  followers Follow[] @relation("UserFollowers")
+  following Follow[] @relation("UserFollowing")
+  
+  // Collections
+  savedVideos SavedVideo[]
+
+  @@map("users")
+}
+
+
+
+model Video {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  videoUrl    String
+  thumbnailUrl String?
+  duration    Int? // in seconds
+  size        Int? // in bytes
+  status      VideoStatus @default(PENDING)
+  location    String?
+  hashtags    String[] // Array of hashtag strings
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes    Like[]
+  comments Comment[]
+  savedBy  SavedVideo[]
+
+  // Analytics
+  views    Int @default(0)
+  shares   Int @default(0)
+
+  @@map("videos")
+}
+
+model Like {
+  id      String @id @default(cuid())
+  userId  String
+  videoId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@map("likes")
+}
+
+model Comment {
+  id      String @id @default(cuid())
+  content String
+  userId  String
+  videoId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Follow {
+  id          String @id @default(cuid())
+  followerId  String
+  followingId String
+
+  follower  User @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model SavedVideo {
+  id      String @id @default(cuid())
+  userId  String
+  videoId String
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, videoId])
+  @@map("saved_videos")
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum VideoStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSING
+}
