@@ -50,6 +50,10 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
   const [fetchedVideo, setFetchedVideo] = useState<Video | null>(null);
   const [individualLoading, setIndividualLoading] = useState(false);
 
+  // State for related videos from database
+  const [relatedVideos, setRelatedVideos] = useState<Video[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+
   // Find the current video from context first
   let currentVideo = videos.find((v) => v.id === videoId);
 
@@ -98,7 +102,31 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     currentVideo = fetchedVideo;
   }
 
-  const relatedVideos = videos.filter((v) => v.id !== videoId).slice(0, 8);
+  // Fetch related videos from database
+  useEffect(() => {
+    const fetchRelatedVideos = async () => {
+      try {
+        setRelatedLoading(true);
+        const response = await fetch(`/api/public/videos?sort=latest&limit=8`);
+        const data = await response.json();
+        
+        if (response.ok && data.videos) {
+          // Filter out the current video and get different videos
+          const filtered = data.videos.filter((v: Video) => v.id !== videoId);
+          setRelatedVideos(filtered.slice(0, 6));
+        }
+      } catch (error) {
+        console.error("Failed to fetch related videos:", error);
+        // Fallback to context videos if API fails
+        const contextRelated = videos.filter((v) => v.id !== videoId).slice(0, 6);
+        setRelatedVideos(contextRelated);
+      } finally {
+        setRelatedLoading(false);
+      }
+    };
+
+    fetchRelatedVideos();
+  }, [videoId, videos]);
 
   // Update page title dynamically
   useEffect(() => {
@@ -389,15 +417,26 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     }
   };
 
-  const formatFullDate = (date: Date) => {
-    // Format as "Oct 5, 2025"
-    const options: Intl.DateTimeFormatOptions = {
+  const formatFullDate = (date: Date | string) => {
+    // Format as "October 5, 2025 at 3:45 PM"
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'short', 
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatDateOnly = (date: Date | string) => {
+    // Format as "October 5, 2025" (no time)
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric'
-    };
-    
-    return date.toLocaleDateString('en-US', options);
+    });
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -415,6 +454,13 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
+  };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return "0:00";
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -541,6 +587,39 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
                 </div>
               </div>
 
+              {/* Video Title and Metadata */}
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+                    {currentVideo.title}
+                  </h1>
+                  <div className="flex items-center gap-4 mt-3 text-gray-400">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
+                      </svg>
+                      {formatCount(currentVideo.views)} views
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                      </svg>
+                      {formatFullDate(new Date(currentVideo.createdAt))}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Video Description */}
+                {currentVideo.description && (
+                  <div className="p-4 bg-gray-900/30 rounded-lg border border-gray-800">
+                    <p className="text-gray-300 text-sm leading-relaxed">
+                      {currentVideo.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Creator Info */}
               <div className="flex items-center justify-between p-4 bg-gray-900/50 rounded-xl border border-gray-800">
                 <div className="flex items-center gap-4">
@@ -560,9 +639,6 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
                     </p>
                     <p className="text-gray-500 text-xs">
                       📍 {currentVideo.location}
-                    </p>
-                    <p className="text-gray-500 text-xs mt-1">
-                      📅 Uploaded {formatFullDate(new Date(currentVideo.createdAt))}
                     </p>
                   </div>
                 </div>
@@ -713,35 +789,68 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
             </div>
 
             {/* Related Videos */}
-            <div className="bg-gray-900/50 rounded-xl border border-gray-800 p-6">
-              <h2 className="text-xl font-bold text-white mb-6">More Videos</h2>
-              <div className="space-y-4">
+            <div className="bg-gradient-to-br from-gray-900/60 to-gray-800/40 rounded-2xl border border-gray-700/50 p-6 backdrop-blur-sm">
+              <h2 className="text-lg font-bold text-white mb-5 flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+                  <Play className="w-4 h-4 text-white" />
+                </div>
+                More Videos
+              </h2>
+              <div className="space-y-3">
                 {relatedVideos.map((video) => (
                   <div
                     key={video.id}
-                    className="flex gap-3 p-3 hover:bg-gray-800/50 rounded-lg transition-colors cursor-pointer group"
+                    className="flex gap-3 p-3 hover:bg-white/5 rounded-xl transition-all duration-200 cursor-pointer group"
                     onClick={() => router.push(`/watch/${video.id}`)}
                   >
-                    <div className="relative aspect-video w-24 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="relative aspect-video w-28 bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
                         src={video.thumbnailUrl}
                         alt={video.title}
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-200"
+                        className="object-cover group-hover:scale-110 transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+                      {video.duration && (
+                        <div className="absolute bottom-1.5 right-1.5 bg-black/75 text-white text-xs px-1.5 py-0.5 rounded font-medium">
+                          {formatDuration(video.duration)}
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-white/90 rounded-full p-2">
+                          <Play className="w-4 h-4 text-gray-900 fill-current" />
+                        </div>
+                      </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white text-sm font-medium line-clamp-2 group-hover:text-purple-300 transition-colors">
+                      <h3 className="text-white text-sm font-medium line-clamp-2 mb-2 group-hover:text-purple-300 transition-colors">
                         {video.title}
                       </h3>
-                      <p className="text-gray-400 text-xs mt-1">
-                        {video.user.username}
-                      </p>
-                      <p className="text-gray-500 text-xs">
-                        {formatCount(video.likes)} likes •{" "}
-                        {formatTimeAgo(new Date(video.createdAt))}
-                      </p>
+                      <div className="flex items-center gap-2 mb-2">
+                        {video.user.avatar ? (
+                          <Image
+                            src={video.user.avatar}
+                            alt={video.user.username}
+                            width={20}
+                            height={20}
+                            className="rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-semibold">
+                              {video.user.username.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-gray-300 text-xs font-medium">
+                          {video.user.username}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-400">
+                        <span>{formatCount(video.views)} views</span>
+                        <span>•</span>
+                        <span>{formatDateOnly(video.createdAt)}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
