@@ -95,34 +95,43 @@ export async function GET(
             avatar: true,
           },
         },
-        _count: {
-          select: {
-            likes: true,
-          },
-        },
       },
       orderBy: { createdAt: "desc" },
       skip: offset,
       take: limit,
     });
 
+    // Get like counts for each comment
+    const commentIds = comments.map(comment => comment.id);
+    const likeCounts = await Promise.all(
+      commentIds.map(async (commentId) => {
+        const count = await prisma.commentLike.count({
+          where: { commentId }
+        });
+        return { commentId, count };
+      })
+    );
+
     // Get total count
     const totalComments = await prisma.comment.count({
       where: { videoId },
     });
 
-    const formattedComments = comments.map((comment) => ({
-      id: comment.id,
-      content: comment.content,
-      createdAt: comment.createdAt,
-      user: {
-        id: comment.user.id,
-        username: comment.user.username,
-        name: comment.user.name || comment.user.username,
-        avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      },
-      likes: comment._count.likes,
-    }));
+    const formattedComments = comments.map((comment) => {
+      const likeData = likeCounts.find(lc => lc.commentId === comment.id);
+      return {
+        id: comment.id,
+        content: comment.content,
+        createdAt: comment.createdAt,
+        user: {
+          id: comment.user.id,
+          username: comment.user.username,
+          name: comment.user.name || comment.user.username,
+          avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+        },
+        likes: likeData?.count || 0,
+      };
+    });
 
     return NextResponse.json({
       success: true,
