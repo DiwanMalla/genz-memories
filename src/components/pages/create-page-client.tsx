@@ -18,7 +18,7 @@ export function CreatePageClient() {
       <TopNavigation />
 
       {/* Main Content */}
-      <main className="pt-16 pb-20">
+      <main className="pt-16 pb-20 md:pb-8">
         <VideoUpload onClose={handleClose} />
       </main>
 

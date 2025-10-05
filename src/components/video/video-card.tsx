@@ -11,6 +11,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import Image from "next/image";
+import { useUser, SignInButton } from "@clerk/nextjs";
 
 interface VideoCardProps {
   video: {
@@ -37,7 +38,13 @@ interface VideoCardProps {
   onClick?: () => void;
 }
 
-export function VideoCard({ video, isActive, layout = "mobile", onClick }: VideoCardProps) {
+export function VideoCard({
+  video,
+  isActive,
+  layout = "mobile",
+  onClick,
+}: VideoCardProps) {
+  const { user } = useUser();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(video.likes);
@@ -133,6 +140,7 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
   };
 
   const toggleLike = () => {
+    if (!user) return; // Require authentication for liking
     setIsLiked(!isLiked);
     setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
   };
@@ -195,9 +203,12 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
                 className="w-10 h-10 rounded-full border-2 border-white object-cover"
               />
               <div>
-                <p className="text-white font-semibold">@{video.user.username}</p>
+                <p className="text-white font-semibold">
+                  @{video.user.username}
+                </p>
                 <p className="text-gray-300 text-sm">
-                  {video.location} • {formatTimeAgo()} {formatTimeAgo() && "ago"}
+                  {video.location} • {formatTimeAgo()}{" "}
+                  {formatTimeAgo() && "ago"}
                 </p>
               </div>
             </div>
@@ -225,18 +236,26 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
           <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4">
             {/* Like Button */}
             <div className="flex flex-col items-center">
-              <button
-                onClick={toggleLike}
-                className={`p-3 rounded-full ${
-                  isLiked ? "bg-red-500" : "bg-black/30 backdrop-blur-sm"
-                } transition-all duration-300`}
-              >
-                <Heart
-                  className={`w-6 h-6 ${
-                    isLiked ? "text-white fill-current" : "text-white"
-                  }`}
-                />
-              </button>
+              {user ? (
+                <button
+                  onClick={toggleLike}
+                  className={`p-3 rounded-full ${
+                    isLiked ? "bg-red-500" : "bg-black/30 backdrop-blur-sm"
+                  } transition-all duration-300`}
+                >
+                  <Heart
+                    className={`w-6 h-6 ${
+                      isLiked ? "text-white fill-current" : "text-white"
+                    }`}
+                  />
+                </button>
+              ) : (
+                <SignInButton mode="modal">
+                  <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm transition-all duration-300">
+                    <Heart className="w-6 h-6 text-white" />
+                  </button>
+                </SignInButton>
+              )}
               <span className="text-white text-sm mt-1">
                 {formatCount(likesCount)}
               </span>
@@ -244,9 +263,17 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
 
             {/* Comment Button */}
             <div className="flex flex-col items-center">
-              <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
-                <MessageCircle className="w-6 h-6 text-white" />
-              </button>
+              {user ? (
+                <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm">
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </button>
+              ) : (
+                <SignInButton mode="modal">
+                  <button className="p-3 rounded-full bg-black/30 backdrop-blur-sm opacity-60">
+                    <MessageCircle className="w-6 h-6 text-white" />
+                  </button>
+                </SignInButton>
+              )}
               <span className="text-white text-sm mt-1">
                 {formatCount(video.comments)}
               </span>
@@ -288,7 +315,7 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
 
   // Desktop Layout (YouTube/Netflix Style)
   return (
-    <div 
+    <div
       className="group cursor-pointer"
       onClick={() => {
         onClick?.();
@@ -329,18 +356,31 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
 
         {/* Quick Actions (Netflix style) */}
         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleLike();
-            }}
-            className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
-              isLiked ? "bg-red-600 text-white" : "bg-black/60 text-white hover:bg-black/80"
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-          </button>
-          
+          {user ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleLike();
+              }}
+              className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
+                isLiked
+                  ? "bg-red-600 text-white"
+                  : "bg-black/60 text-white hover:bg-black/80"
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+            </button>
+          ) : (
+            <SignInButton mode="modal">
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-colors opacity-60"
+              >
+                <Heart className="w-4 h-4" />
+              </button>
+            </SignInButton>
+          )}
+
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -348,7 +388,11 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
             }}
             className="p-2 rounded-full bg-black/60 text-white hover:bg-black/80 backdrop-blur-sm transition-colors"
           >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            {isMuted ? (
+              <VolumeX className="w-4 h-4" />
+            ) : (
+              <Volume2 className="w-4 h-4" />
+            )}
           </button>
         </div>
 
@@ -379,12 +423,12 @@ export function VideoCard({ video, isActive, layout = "mobile", onClick }: Video
           <h3 className="text-white font-medium text-sm leading-tight mb-1 line-clamp-2 group-hover:text-blue-400 transition-colors">
             {video.title}
           </h3>
-          
+
           {/* Channel Name */}
           <p className="text-gray-400 text-xs mb-1 hover:text-white transition-colors cursor-pointer">
             {video.user.username}
           </p>
-          
+
           {/* Views and Time */}
           <div className="flex items-center text-gray-400 text-xs space-x-1">
             <span>{formatCount(video.likes + video.comments * 10)} views</span>

@@ -1,6 +1,6 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { Upload, Users, Shield } from "lucide-react";
+import { Upload, Users, Shield, Play } from "lucide-react";
 
 export default function Home() {
   return (
@@ -13,6 +13,9 @@ export default function Home() {
           </span>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/feed" className="text-white hover:text-purple-400 mr-4">
+            Feed
+          </Link>
           <SignedOut>
             <SignInButton mode="modal">
               <button className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-full transition-all duration-300">
@@ -21,12 +24,6 @@ export default function Home() {
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <Link
-              href="/feed"
-              className="text-white hover:text-purple-400 mr-4"
-            >
-              Feed
-            </Link>
             <UserButton afterSignOutUrl="/" />
           </SignedIn>
         </div>
@@ -50,11 +47,19 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mt-12">
             <SignedOut>
-              <SignInButton mode="modal">
-                <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105">
-                  Start Documenting
-                </button>
-              </SignInButton>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/feed"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 transform hover:scale-105"
+                >
+                  Browse Feed
+                </Link>
+                <SignInButton mode="modal">
+                  <button className="border-2 border-white text-white hover:bg-white hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300">
+                    Sign Up to Upload
+                  </button>
+                </SignInButton>
+              </div>
             </SignedOut>
             <SignedIn>
               <Link
@@ -64,9 +69,6 @@ export default function Home() {
                 Go to Feed
               </Link>
             </SignedIn>
-            <button className="border-2 border-white text-white hover:bg-white hover:text-black px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300">
-              Watch Demo
-            </button>
           </div>
         </div>
 

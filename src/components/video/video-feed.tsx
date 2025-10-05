@@ -91,8 +91,12 @@ export function VideoFeed() {
         <div className="container mx-auto px-6 py-8">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Discover Stories</h1>
-            <p className="text-gray-400">Explore powerful voices and movements from Generation Z</p>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Discover Stories
+            </h1>
+            <p className="text-gray-400">
+              Explore powerful voices and movements from Generation Z
+            </p>
           </div>
 
           {/* Video Grid */}

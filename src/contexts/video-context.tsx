@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useEffect,
+  useCallback,
   ReactNode,
 } from "react";
 import { useUser } from "@clerk/nextjs";
@@ -32,6 +33,12 @@ interface Video {
 
 interface VideoContextType {
   videos: Video[];
+  filteredVideos: Video[];
+  isLoading: boolean;
+  error: string | null;
+  selectedHashtags: string[];
+  setSelectedHashtags: (hashtags: string[]) => void;
+  refreshVideos: () => Promise<void>;
   addVideo: (
     videoData: Omit<
       Video,
@@ -92,26 +99,104 @@ const initialVideos: Video[] = [
 ];
 
 export function VideoProvider({ children }: { children: ReactNode }) {
-  const [videos, setVideos] = useState<Video[]>(initialVideos);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [filteredVideos, setFilteredVideos] = useState<Video[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const { user } = useUser();
 
-  // Fetch videos from API on mount
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const response = await fetch("/api/videos");
-        const data = await response.json();
-        if (response.ok && data.videos) {
-          setVideos(data.videos);
-        }
-      } catch (error) {
-        console.error("Failed to fetch videos:", error);
-        // Keep using initial videos as fallback
-      }
-    };
+  // Fetch videos from API
+  const fetchVideos = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
+      // Build query string with hashtag filters
+      const queryParams = new URLSearchParams();
+      if (selectedHashtags.length > 0) {
+        queryParams.set("hashtags", selectedHashtags.join(","));
+      }
+
+      const response = await fetch(
+        `/api/public/videos?${queryParams.toString()}`
+      );
+      const data = await response.json();
+
+      if (response.ok && data.videos) {
+        setVideos(data.videos);
+        setFilteredVideos(data.videos);
+      } else {
+        // If API fails, use fallback data
+        const fallbackData =
+          selectedHashtags.length > 0
+            ? initialVideos.filter((video) =>
+                selectedHashtags.some((tag) =>
+                  video.hashtags.some(
+                    (videoTag) =>
+                      videoTag.toLowerCase().includes(tag.toLowerCase()) ||
+                      videoTag.replace("#", "").toLowerCase() ===
+                        tag.toLowerCase()
+                  )
+                )
+              )
+            : initialVideos;
+
+        setVideos(fallbackData);
+        setFilteredVideos(fallbackData);
+        setError("Using fallback data");
+      }
+    } catch (error) {
+      console.error("Failed to fetch videos:", error);
+      const fallbackData =
+        selectedHashtags.length > 0
+          ? initialVideos.filter((video) =>
+              selectedHashtags.some((tag) =>
+                video.hashtags.some(
+                  (videoTag) =>
+                    videoTag.toLowerCase().includes(tag.toLowerCase()) ||
+                    videoTag.replace("#", "").toLowerCase() ===
+                      tag.toLowerCase()
+                )
+              )
+            )
+          : initialVideos;
+
+      setVideos(fallbackData);
+      setFilteredVideos(fallbackData);
+      setError("Failed to fetch videos, showing sample content");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedHashtags]);
+
+  // Refresh videos function for external use
+  const refreshVideos = async () => {
+    await fetchVideos();
+  };
+
+  // Fetch videos when component mounts or hashtags change
+  useEffect(() => {
     fetchVideos();
-  }, []);
+  }, [fetchVideos]);
+
+  // Update filtered videos when hashtags change locally (client-side filtering for better UX)
+  useEffect(() => {
+    if (selectedHashtags.length === 0) {
+      setFilteredVideos(videos);
+    } else {
+      const filtered = videos.filter((video) =>
+        selectedHashtags.some((tag) =>
+          video.hashtags.some(
+            (videoTag) =>
+              videoTag.toLowerCase().includes(tag.toLowerCase()) ||
+              videoTag.replace("#", "").toLowerCase() === tag.toLowerCase()
+          )
+        )
+      );
+      setFilteredVideos(filtered);
+    }
+  }, [videos, selectedHashtags]);
 
   const addVideo = (
     videoData: Omit<
@@ -162,7 +247,19 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <VideoContext.Provider value={{ videos, addVideo, removeVideo }}>
+    <VideoContext.Provider
+      value={{
+        videos,
+        filteredVideos,
+        isLoading,
+        error,
+        selectedHashtags,
+        setSelectedHashtags,
+        refreshVideos,
+        addVideo,
+        removeVideo,
+      }}
+    >
       {children}
     </VideoContext.Provider>
   );
