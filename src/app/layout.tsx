@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { QueryProvider } from "../components/providers/query-provider";
 import { VideoProvider } from "@/contexts/video-context";
 import { Toaster } from "react-hot-toast";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,6 +62,7 @@ export default function RootLayout({
               />
             </VideoProvider>
           </QueryProvider>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
