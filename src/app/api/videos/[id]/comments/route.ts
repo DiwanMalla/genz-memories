@@ -95,9 +95,9 @@ export async function GET(
             avatar: true,
           },
         },
-        likes: {
+        _count: {
           select: {
-            id: true,
+            likes: true,
           },
         },
       },
@@ -121,7 +121,7 @@ export async function GET(
         name: comment.user.name || comment.user.username,
         avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
       },
-      likes: comment.likes.length,
+      likes: comment._count.likes,
     }));
 
     return NextResponse.json({
