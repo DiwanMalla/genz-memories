@@ -1,11 +1,12 @@
 import { VideoDetailPage } from "@/components/video/video-detail-page";
 
 interface WatchPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function WatchPage({ params }: WatchPageProps) {
-  return <VideoDetailPage videoId={params.id} />;
+export default async function WatchPage({ params }: WatchPageProps) {
+  const { id } = await params;
+  return <VideoDetailPage videoId={id} />;
 }
