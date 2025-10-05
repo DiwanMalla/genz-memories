@@ -73,10 +73,10 @@ export function VideoFeed() {
         setRecommendedLoading(true);
         // If user is logged in, get personalized recommendations
         // Otherwise, get latest videos
-        const endpoint = user 
+        const endpoint = user
           ? "/api/videos/recommendations?limit=12"
           : "/api/public/videos?sort=latest&limit=12";
-        
+
         const response = await fetch(endpoint);
         const data = await response.json();
 

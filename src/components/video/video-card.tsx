@@ -59,20 +59,23 @@ export function VideoCard({
     setMounted(true);
   }, []);
 
-  const formatFullDate = (dateInput: Date | string) => {
-    if (!mounted) return "";
+  const formatFullDate = (dateInput: Date | string | undefined) => {
+    if (!mounted || !dateInput) return "";
 
     // Ensure createdAt is a Date object, whether it comes as string or Date
     const createdAt = new Date(dateInput);
     
+    // Check if date is valid
+    if (isNaN(createdAt.getTime())) return "";
+
     // Format as "Oct 5, 2025"
     const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short', 
-      day: 'numeric'
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     };
-    
-    return createdAt.toLocaleDateString('en-US', options);
+
+    return createdAt.toLocaleDateString("en-US", options);
   };
 
   useEffect(() => {
@@ -167,7 +170,7 @@ export function VideoCard({
     if (!seconds || seconds === 0) return "0:00";
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
   // Mobile Layout (TikTok-style)

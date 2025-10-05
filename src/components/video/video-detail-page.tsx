@@ -109,7 +109,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
         setRelatedLoading(true);
         const response = await fetch(`/api/public/videos?sort=latest&limit=8`);
         const data = await response.json();
-        
+
         if (response.ok && data.videos) {
           // Filter out the current video and get different videos
           const filtered = data.videos.filter((v: Video) => v.id !== videoId);
@@ -118,7 +118,9 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
       } catch (error) {
         console.error("Failed to fetch related videos:", error);
         // Fallback to context videos if API fails
-        const contextRelated = videos.filter((v) => v.id !== videoId).slice(0, 6);
+        const contextRelated = videos
+          .filter((v) => v.id !== videoId)
+          .slice(0, 6);
         setRelatedVideos(contextRelated);
       } finally {
         setRelatedLoading(false);
@@ -156,7 +158,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
   const [commentsCount, setCommentsCount] = useState(0);
   const [sharesCount, setSharesCount] = useState(0);
   const [viewsCount, setViewsCount] = useState(0);
-  
+
   // Loading states
   const [likingInProgress, setLikingInProgress] = useState(false);
   const [sharingInProgress, setSharingInProgress] = useState(false);
@@ -173,7 +175,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     try {
       const response = await fetch(`/api/videos/${currentVideo.id}/like`);
       const data = await response.json();
-      
+
       if (data.success) {
         setIsLiked(data.isLiked);
         setLikesCount(data.likesCount);
@@ -191,7 +193,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
       setCommentsLoading(true);
       const response = await fetch(`/api/videos/${currentVideo.id}/comments`);
       const data = await response.json();
-      
+
       if (data.success) {
         setComments(data.comments);
         setCommentsCount(data.total);
@@ -304,14 +306,14 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     try {
       setLikingInProgress(true);
       const response = await fetch(`/api/videos/${currentVideo.id}/like`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setIsLiked(data.isLiked);
         setLikesCount(data.likesCount);
@@ -328,7 +330,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
 
     try {
       setSharingInProgress(true);
-      
+
       // First, try to use Web Share API if available
       if (navigator.share) {
         const shareData = {
@@ -336,7 +338,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
           text: currentVideo.description,
           url: window.location.href,
         };
-        
+
         if (navigator.canShare && navigator.canShare(shareData)) {
           await navigator.share(shareData);
         } else {
@@ -349,14 +351,14 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
 
       // Increment share count on server
       const response = await fetch(`/api/videos/${currentVideo.id}/share`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setSharesCount(data.shares);
       }
@@ -372,14 +374,14 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
 
     try {
       const response = await fetch(`/api/videos/${currentVideo.id}/views`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         setViewsCount(data.views);
         setViewTracked(true);
@@ -395,19 +397,19 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
 
     try {
       const response = await fetch(`/api/videos/${currentVideo.id}/comments`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ content: newComment.trim() }),
       });
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
         // Add new comment to the beginning
         setComments([data.comment, ...comments]);
-        setCommentsCount(prev => prev + 1);
+        setCommentsCount((prev) => prev + 1);
         setNewComment("");
       } else {
         console.error("Failed to post comment:", data.message);
@@ -417,31 +419,39 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     }
   };
 
-  const formatFullDate = (date: Date | string) => {
+  const formatFullDate = (date: Date | string | undefined) => {
+    if (!date) return "Unknown date";
     // Format as "October 5, 2025 at 3:45 PM"
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return "Invalid date";
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const formatDateOnly = (date: Date | string) => {
+  const formatDateOnly = (date: Date | string | undefined) => {
+    if (!date) return "Unknown date";
     // Format as "October 5, 2025" (no time)
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return dateObj.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return "Invalid date";
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (date: Date | string | undefined) => {
+    if (!date) return "Unknown time";
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return "Invalid time";
+    
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = now.getTime() - dateObj.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 
@@ -450,7 +460,8 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     return "Just now";
   };
 
-  const formatCount = (count: number) => {
+  const formatCount = (count: number | undefined) => {
+    if (!count || count === 0) return "0";
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
@@ -530,10 +541,14 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
                     onClick={user ? toggleLike : undefined}
                     disabled={likingInProgress}
                     className={`flex items-center gap-2 transition-colors ${
-                      user ? 'hover:text-red-400 cursor-pointer' : 'cursor-default'
-                    } ${isLiked ? 'text-red-400' : ''}`}
+                      user
+                        ? "hover:text-red-400 cursor-pointer"
+                        : "cursor-default"
+                    } ${isLiked ? "text-red-400" : ""}`}
                   >
-                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-400 text-red-400' : 'text-red-400'}`} />
+                    <Heart
+                      className={`w-4 h-4 ${isLiked ? "fill-red-400 text-red-400" : "text-red-400"}`}
+                    />
                     <span>{formatCount(likesCount)} likes</span>
                   </button>
                   <div className="flex items-center gap-2">
@@ -595,15 +610,31 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
                   </h1>
                   <div className="flex items-center gap-4 mt-3 text-gray-400">
                     <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
-                        <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path
+                          fillRule="evenodd"
+                          d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       {formatCount(currentVideo.views)} views
                     </span>
                     <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       {formatFullDate(new Date(currentVideo.createdAt))}
                     </span>
@@ -781,7 +812,9 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
                     <div className="text-center py-8">
                       <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-2" />
                       <p className="text-gray-400">No comments yet</p>
-                      <p className="text-gray-500 text-sm">Be the first to comment!</p>
+                      <p className="text-gray-500 text-sm">
+                        Be the first to comment!
+                      </p>
                     </div>
                   )}
                 </div>

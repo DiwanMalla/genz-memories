@@ -264,7 +264,7 @@ export async function GET(request: Request) {
 
     // Fetch videos based on sort parameter
     let videos;
-    
+
     if (sortParam === "latest" || sortParam === "recent") {
       // For latest videos, simply order by creation date
       videos = await prisma.video.findMany({
@@ -286,7 +286,7 @@ export async function GET(request: Request) {
           },
         },
         orderBy: {
-          createdAt: 'desc', // Most recent first
+          createdAt: "desc", // Most recent first
         },
         take: limit,
       });
@@ -315,7 +315,7 @@ export async function GET(request: Request) {
     }
 
     let sortedVideos;
-    
+
     if (sortParam === "latest" || sortParam === "recent") {
       // Videos are already sorted by creation date
       sortedVideos = videos;
@@ -334,7 +334,8 @@ export async function GET(request: Request) {
         const shares = video.shares;
 
         // Calculate engagement score (weighted)
-        const engagementScore = likes * 3 + comments * 5 + views * 1 + shares * 4;
+        const engagementScore =
+          likes * 3 + comments * 5 + views * 1 + shares * 4;
 
         // Algorithm selection
         let trendingScore = 0;
@@ -394,13 +395,17 @@ export async function GET(request: Request) {
     }));
 
     // If no videos in database, return mock data as fallback
-    let finalVideos = transformedVideos.length > 0 ? transformedVideos : mockVideos;
-    
+    let finalVideos =
+      transformedVideos.length > 0 ? transformedVideos : mockVideos;
+
     // If using mock data, apply sorting and limit
     if (transformedVideos.length === 0) {
       if (sortParam === "latest" || sortParam === "recent") {
         finalVideos = mockVideos
-          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
           .slice(0, limit);
       } else {
         finalVideos = mockVideos.slice(0, limit);

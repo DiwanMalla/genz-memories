@@ -9,7 +9,7 @@ export async function POST(
   const params = await context.params;
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return NextResponse.json(
         { success: false, message: "Authentication required" },

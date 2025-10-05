@@ -9,7 +9,7 @@ export async function POST(
   const params = await context.params;
   try {
     const { userId } = await auth();
-    
+
     if (!userId) {
       return NextResponse.json(
         { success: false, message: "Authentication required" },
@@ -56,7 +56,9 @@ export async function POST(
           id: comment.user.id,
           username: comment.user.username,
           name: comment.user.name || comment.user.username,
-          avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+          avatar:
+            comment.user.avatar ||
+            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
         },
         likes: 0, // New comments start with 0 likes
       },
@@ -102,11 +104,11 @@ export async function GET(
     });
 
     // Get like counts for each comment
-    const commentIds = comments.map(comment => comment.id);
+    const commentIds = comments.map((comment) => comment.id);
     const likeCounts = await Promise.all(
       commentIds.map(async (commentId) => {
         const count = await prisma.commentLike.count({
-          where: { commentId }
+          where: { commentId },
         });
         return { commentId, count };
       })
@@ -118,7 +120,7 @@ export async function GET(
     });
 
     const formattedComments = comments.map((comment) => {
-      const likeData = likeCounts.find(lc => lc.commentId === comment.id);
+      const likeData = likeCounts.find((lc) => lc.commentId === comment.id);
       return {
         id: comment.id,
         content: comment.content,
@@ -127,7 +129,9 @@ export async function GET(
           id: comment.user.id,
           username: comment.user.username,
           name: comment.user.name || comment.user.username,
-          avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+          avatar:
+            comment.user.avatar ||
+            "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
         },
         likes: likeData?.count || 0,
       };
