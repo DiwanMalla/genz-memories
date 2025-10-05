@@ -12,7 +12,6 @@ import {
   MessageCircle,
   Share2,
   MoreVertical,
-  ArrowLeft,
   Send,
   ThumbsUp,
   Flag,

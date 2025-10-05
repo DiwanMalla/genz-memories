@@ -1,6 +1,6 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { Upload, Users, Shield, Play } from "lucide-react";
+import { Upload, Users, Shield } from "lucide-react";
 
 export default function Home() {
   return (
