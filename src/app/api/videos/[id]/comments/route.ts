@@ -43,11 +43,6 @@ export async function POST(
             avatar: true,
           },
         },
-        _count: {
-          select: {
-            likes: true,
-          },
-        },
       },
     });
 
@@ -63,7 +58,7 @@ export async function POST(
           name: comment.user.name || comment.user.username,
           avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
         },
-        likes: comment._count.likes,
+        likes: 0, // New comments start with 0 likes
       },
     });
   } catch (error) {
@@ -100,9 +95,9 @@ export async function GET(
             avatar: true,
           },
         },
-        _count: {
+        likes: {
           select: {
-            likes: true,
+            id: true,
           },
         },
       },
@@ -126,7 +121,7 @@ export async function GET(
         name: comment.user.name || comment.user.username,
         avatar: comment.user.avatar || "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
       },
-      likes: comment._count.likes,
+      likes: comment.likes.length,
     }));
 
     return NextResponse.json({
