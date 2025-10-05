@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -30,13 +30,15 @@ interface VideoDetailPageProps {
 
 interface Comment {
   id: string;
-  userId: string;
-  username: string;
-  avatar: string;
-  text: string;
-  timestamp: Date;
+  content: string;
+  createdAt: Date | string;
+  user: {
+    id: string;
+    username: string;
+    name: string;
+    avatar: string;
+  };
   likes: number;
-  replies?: Comment[];
 }
 
 export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
@@ -118,46 +120,80 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
   // Video player state
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(currentVideo?.likes || 0);
   const [showComments, setShowComments] = useState(true);
+  const [viewTracked, setViewTracked] = useState(false);
+
+  // Social interaction states
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+  const [sharesCount, setSharesCount] = useState(0);
+  const [viewsCount, setViewsCount] = useState(0);
+  
+  // Loading states
+  const [likingInProgress, setLikingInProgress] = useState(false);
+  const [sharingInProgress, setSharingInProgress] = useState(false);
 
   // Comments state
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: "1",
-      userId: "user1",
-      username: "activist_marie",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b612b1e5?w=150&h=150&fit=crop&crop=face",
-      text: "This movement is so important! We need to keep pushing for change. 💪",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-      likes: 12,
-      replies: [
-        {
-          id: "1-1",
-          userId: "user2",
-          username: "young_leader",
-          avatar:
-            "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-          text: "Absolutely! Every voice matters in this fight.",
-          timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
-          likes: 5,
-        },
-      ],
-    },
-    {
-      id: "2",
-      userId: "user3",
-      username: "climate_warrior",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      text: "I was there! The energy was incredible. Thanks for documenting this historic moment.",
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-      likes: 28,
-    },
-  ]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [commentsLoading, setCommentsLoading] = useState(false);
+
+  // Fetch like status
+  const fetchLikeStatus = useCallback(async () => {
+    if (!currentVideo || !user) return;
+
+    try {
+      const response = await fetch(`/api/videos/${currentVideo.id}/like`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsLiked(data.isLiked);
+        setLikesCount(data.likesCount);
+      }
+    } catch (error) {
+      console.error("Failed to fetch like status:", error);
+    }
+  }, [currentVideo, user]);
+
+  // Fetch comments
+  const fetchComments = useCallback(async () => {
+    if (!currentVideo) return;
+
+    try {
+      setCommentsLoading(true);
+      const response = await fetch(`/api/videos/${currentVideo.id}/comments`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setComments(data.comments);
+        setCommentsCount(data.total);
+      }
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+    } finally {
+      setCommentsLoading(false);
+    }
+  }, [currentVideo]);
+
+  // Initialize social data when video is available
+  useEffect(() => {
+    if (currentVideo) {
+      // Initialize counts from video data
+      setLikesCount(currentVideo.likes || 0);
+      setCommentsCount(currentVideo.comments || 0);
+      setSharesCount(currentVideo.shares || 0);
+      setViewsCount(currentVideo.views || 0);
+
+      // Fetch like status if user is logged in
+      if (user) {
+        fetchLikeStatus();
+      }
+
+      // Fetch comments
+      fetchComments();
+    }
+  }, [currentVideo, user, fetchLikeStatus, fetchComments]);
 
   // Show loading spinner while videos are being fetched
   if (isLoading || individualLoading) {
@@ -218,6 +254,8 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
       } else {
         await video.play();
         setIsPlaying(true);
+        // Track view when video starts playing
+        trackView();
       }
     } catch (error) {
       console.error("Video play error:", error);
@@ -232,30 +270,135 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
     }
   };
 
-  const toggleLike = () => {
-    if (!user) return; // Require authentication for liking
-    setIsLiked(!isLiked);
-    setLikesCount((prev) => (isLiked ? prev - 1 : prev + 1));
+  // Social interaction handlers
+  const toggleLike = async () => {
+    if (!user || !currentVideo) return;
+
+    try {
+      setLikingInProgress(true);
+      const response = await fetch(`/api/videos/${currentVideo.id}/like`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setIsLiked(data.isLiked);
+        setLikesCount(data.likesCount);
+      }
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+    } finally {
+      setLikingInProgress(false);
+    }
   };
 
-  const handleSubmitComment = (e: React.FormEvent) => {
+  const handleShare = async () => {
+    if (!currentVideo) return;
+
+    try {
+      setSharingInProgress(true);
+      
+      // First, try to use Web Share API if available
+      if (navigator.share) {
+        const shareData = {
+          title: currentVideo.title,
+          text: currentVideo.description,
+          url: window.location.href,
+        };
+        
+        if (navigator.canShare && navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+        } else {
+          await navigator.clipboard.writeText(window.location.href);
+        }
+      } else {
+        // Fallback: copy link to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+      }
+
+      // Increment share count on server
+      const response = await fetch(`/api/videos/${currentVideo.id}/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setSharesCount(data.shares);
+      }
+    } catch (error) {
+      console.error("Failed to share:", error);
+    } finally {
+      setSharingInProgress(false);
+    }
+  };
+
+  const trackView = async () => {
+    if (!currentVideo || viewTracked) return;
+
+    try {
+      const response = await fetch(`/api/videos/${currentVideo.id}/views`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setViewsCount(data.views);
+        setViewTracked(true);
+      }
+    } catch (error) {
+      console.error("Failed to track view:", error);
+    }
+  };
+
+  const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !user) return;
+    if (!newComment.trim() || !user || !currentVideo) return;
 
-    const comment: Comment = {
-      id: Date.now().toString(),
-      userId: user.id,
-      username: user.username || "user",
-      avatar:
-        user.imageUrl ||
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      text: newComment.trim(),
-      timestamp: new Date(),
-      likes: 0,
+    try {
+      const response = await fetch(`/api/videos/${currentVideo.id}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: newComment.trim() }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Add new comment to the beginning
+        setComments([data.comment, ...comments]);
+        setCommentsCount(prev => prev + 1);
+        setNewComment("");
+      } else {
+        console.error("Failed to post comment:", data.message);
+      }
+    } catch (error) {
+      console.error("Failed to post comment:", error);
+    }
+  };
+
+  const formatFullDate = (date: Date) => {
+    // Format as "Oct 5, 2025"
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric'
     };
-
-    setComments([comment, ...comments]);
-    setNewComment("");
+    
+    return date.toLocaleDateString('en-US', options);
   };
 
   const formatTimeAgo = (date: Date) => {
@@ -280,62 +423,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
       {/* Top Navigation */}
       <TopNavigation />
 
-      {/* Video Header */}
-      <div className="border-b border-gray-800 p-4 pt-20 md:pt-4">
-        <div className="max-w-7xl mx-auto flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="p-2 hover:bg-gray-800 rounded-full transition-colors"
-          >
-            <ArrowLeft className="w-6 h-6 text-white" />
-          </button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-white truncate">
-              {currentVideo.title}
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm text-gray-400">
-                by {currentVideo.user.name}
-              </span>
-              <span className="text-gray-600">•</span>
-              <span className="text-sm text-gray-400">
-                {formatTimeAgo(new Date(currentVideo.createdAt))}
-              </span>
-            </div>
-          </div>
-
-          {/* Action buttons in header */}
-          <div className="flex items-center gap-2">
-            {user ? (
-              <button
-                onClick={toggleLike}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full transition-all duration-200 ${
-                  isLiked
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-gray-800 hover:bg-gray-700 text-gray-300"
-                }`}
-              >
-                <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
-                <span className="text-sm">{formatCount(likesCount)}</span>
-              </button>
-            ) : (
-              <SignInButton mode="modal">
-                <button className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full transition-colors">
-                  <Heart className="w-4 h-4" />
-                  <span className="text-sm">{formatCount(likesCount)}</span>
-                </button>
-              </SignInButton>
-            )}
-
-            <button className="flex items-center gap-1 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full transition-colors">
-              <Share2 className="w-4 h-4" />
-              <span className="text-sm hidden sm:inline">Share</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6 my-15">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           {/* Main Video Section */}
           <div className="xl:col-span-2 space-y-6">
@@ -393,17 +481,33 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
               {/* Video Stats */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-6 text-gray-400 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Heart className="w-4 h-4 text-red-400" />
+                  <button
+                    onClick={user ? toggleLike : undefined}
+                    disabled={likingInProgress}
+                    className={`flex items-center gap-2 transition-colors ${
+                      user ? 'hover:text-red-400 cursor-pointer' : 'cursor-default'
+                    } ${isLiked ? 'text-red-400' : ''}`}
+                  >
+                    <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-400 text-red-400' : 'text-red-400'}`} />
                     <span>{formatCount(likesCount)} likes</span>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-4 h-4 text-blue-400" />
-                    <span>{formatCount(currentVideo.comments)} comments</span>
+                    <span>{formatCount(commentsCount)} comments</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleShare}
+                    disabled={sharingInProgress}
+                    className="flex items-center gap-2 hover:text-green-400 cursor-pointer transition-colors"
+                  >
                     <Share2 className="w-4 h-4 text-green-400" />
-                    <span>{formatCount(currentVideo.shares || 0)} shares</span>
+                    <span>{formatCount(sharesCount)} shares</span>
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                    </div>
+                    <span>{formatCount(viewsCount)} views</span>
                   </div>
                 </div>
 
@@ -458,6 +562,9 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
                     <p className="text-gray-500 text-xs">
                       📍 {currentVideo.location}
                     </p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      📅 Uploaded {formatFullDate(new Date(currentVideo.createdAt))}
+                    </p>
                   </div>
                 </div>
                 {user ? (
@@ -499,7 +606,7 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" />
-                  Comments ({comments.length})
+                  Comments ({commentsCount})
                 </h2>
                 <button
                   onClick={() => setShowComments(!showComments)}
@@ -546,87 +653,62 @@ export function VideoDetailPage({ videoId }: VideoDetailPageProps) {
               {/* Comments List */}
               {showComments && (
                 <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="space-y-3">
-                      <div className="flex gap-3">
-                        <Image
-                          src={comment.avatar}
-                          alt={comment.username}
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full flex-shrink-0"
-                        />
-                        <div className="flex-1">
-                          <div className="bg-gray-800/50 p-3 rounded-lg">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-white font-medium text-sm">
-                                {comment.username}
-                              </span>
-                              <span className="text-gray-500 text-xs">
-                                {formatTimeAgo(comment.timestamp)}
-                              </span>
+                  {commentsLoading ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
+                      <p className="text-gray-400">Loading comments...</p>
+                    </div>
+                  ) : comments.length > 0 ? (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="space-y-3">
+                        <div className="flex gap-3">
+                          <Image
+                            src={comment.user.avatar}
+                            alt={comment.user.name}
+                            width={32}
+                            height={32}
+                            className="w-8 h-8 rounded-full flex-shrink-0"
+                          />
+                          <div className="flex-1">
+                            <div className="bg-gray-800/50 p-3 rounded-lg">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="text-white font-medium text-sm">
+                                  {comment.user.name}
+                                </span>
+                                <span className="text-gray-400 text-xs">
+                                  @{comment.user.username}
+                                </span>
+                                <span className="text-gray-500 text-xs">
+                                  {formatTimeAgo(new Date(comment.createdAt))}
+                                </span>
+                              </div>
+                              <p className="text-gray-300 text-sm">
+                                {comment.content}
+                              </p>
                             </div>
-                            <p className="text-gray-300 text-sm">
-                              {comment.text}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-4 mt-2 text-xs">
-                            <button className="text-gray-400 hover:text-white flex items-center gap-1 transition-colors">
-                              <ThumbsUp className="w-3 h-3" />
-                              {comment.likes}
-                            </button>
-                            <button className="text-gray-400 hover:text-white transition-colors">
-                              Reply
-                            </button>
-                            <button className="text-gray-400 hover:text-red-400 transition-colors">
-                              <Flag className="w-3 h-3" />
-                            </button>
+                            <div className="flex items-center gap-4 mt-2 text-xs">
+                              <button className="text-gray-400 hover:text-white flex items-center gap-1 transition-colors">
+                                <ThumbsUp className="w-3 h-3" />
+                                {comment.likes}
+                              </button>
+                              <button className="text-gray-400 hover:text-white transition-colors">
+                                Reply
+                              </button>
+                              <button className="text-gray-400 hover:text-red-400 transition-colors">
+                                <Flag className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
-
-                      {/* Replies */}
-                      {comment.replies && comment.replies.length > 0 && (
-                        <div className="ml-11 space-y-3">
-                          {comment.replies.map((reply) => (
-                            <div key={reply.id} className="flex gap-3">
-                              <Image
-                                src={reply.avatar}
-                                alt={reply.username}
-                                width={28}
-                                height={28}
-                                className="w-7 h-7 rounded-full flex-shrink-0"
-                              />
-                              <div className="flex-1">
-                                <div className="bg-gray-800/30 p-3 rounded-lg">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="text-white font-medium text-sm">
-                                      {reply.username}
-                                    </span>
-                                    <span className="text-gray-500 text-xs">
-                                      {formatTimeAgo(reply.timestamp)}
-                                    </span>
-                                  </div>
-                                  <p className="text-gray-300 text-sm">
-                                    {reply.text}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-4 mt-2 text-xs">
-                                  <button className="text-gray-400 hover:text-white flex items-center gap-1 transition-colors">
-                                    <ThumbsUp className="w-3 h-3" />
-                                    {reply.likes}
-                                  </button>
-                                  <button className="text-gray-400 hover:text-white transition-colors">
-                                    Reply
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <MessageCircle className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                      <p className="text-gray-400">No comments yet</p>
+                      <p className="text-gray-500 text-sm">Be the first to comment!</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </div>

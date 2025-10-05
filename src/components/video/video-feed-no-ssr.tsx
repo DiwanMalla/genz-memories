@@ -66,12 +66,18 @@ export function VideoFeed() {
     fetchTrending();
   }, []);
 
-  // Fetch recommended videos
+  // Fetch recommended videos or latest videos for non-users
   useEffect(() => {
     const fetchRecommendations = async () => {
       try {
         setRecommendedLoading(true);
-        const response = await fetch("/api/videos/recommendations?limit=12");
+        // If user is logged in, get personalized recommendations
+        // Otherwise, get latest videos
+        const endpoint = user 
+          ? "/api/videos/recommendations?limit=12"
+          : "/api/public/videos?sort=latest&limit=12";
+        
+        const response = await fetch(endpoint);
         const data = await response.json();
 
         if (response.ok && data.videos) {
@@ -252,7 +258,7 @@ export function VideoFeed() {
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-bold text-white">
-                  {user ? "Recommended for you" : "Popular videos"}
+                  {user ? "Recommended for you" : "Latest videos"}
                 </h2>
                 {user && (
                   <div className="flex items-center gap-1 px-2 py-1 bg-purple-600/20 border border-purple-500/30 rounded-full">

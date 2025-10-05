@@ -17,6 +17,7 @@ interface Video {
   description: string;
   videoUrl: string;
   thumbnailUrl: string;
+  duration?: number; // Duration in seconds
   user: {
     id: string;
     username: string;
@@ -26,6 +27,7 @@ interface Video {
   likes: number;
   comments: number;
   shares: number;
+  views: number;
   hashtags: string[];
   location: string;
   createdAt: Date | string; // Allow both Date and string for API flexibility
@@ -42,7 +44,7 @@ interface VideoContextType {
   addVideo: (
     videoData: Omit<
       Video,
-      "id" | "user" | "likes" | "comments" | "shares" | "createdAt"
+      "id" | "user" | "likes" | "comments" | "shares" | "views" | "createdAt"
     >
   ) => void;
   removeVideo: (id: string) => void;
@@ -67,9 +69,11 @@ const initialVideos: Video[] = [
       avatar:
         "https://images.unsplash.com/photo-1494790108755-2616b612b1e5?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 154, // 2:34 in seconds
     likes: 1250,
     comments: 89,
     shares: 45,
+    views: 8750,
     hashtags: ["#ClimateChange", "#Activism", "#GenZ"],
     location: "New York City",
     createdAt: new Date("2025-10-01"),
@@ -89,9 +93,11 @@ const initialVideos: Video[] = [
       avatar:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 187, // 3:07 in seconds
     likes: 890,
     comments: 67,
     shares: 23,
+    views: 6420,
     hashtags: ["#EducationReform", "#StudentRights", "#Change"],
     location: "Berkeley, CA",
     createdAt: new Date("2025-09-30"),
@@ -201,7 +207,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
   const addVideo = (
     videoData: Omit<
       Video,
-      "id" | "user" | "likes" | "comments" | "shares" | "createdAt"
+      "id" | "user" | "likes" | "comments" | "shares" | "views" | "createdAt"
     >
   ) => {
     if (!user) {
@@ -224,6 +230,7 @@ export function VideoProvider({ children }: { children: ReactNode }) {
       likes: 0,
       comments: 0,
       shares: 0,
+      views: 0,
       createdAt: new Date(),
     };
 

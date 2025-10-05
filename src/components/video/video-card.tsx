@@ -20,6 +20,7 @@ interface VideoCardProps {
     description: string;
     videoUrl: string;
     thumbnailUrl: string;
+    duration?: number; // Duration in seconds
     user: {
       id: string;
       username: string;
@@ -29,6 +30,7 @@ interface VideoCardProps {
     likes: number;
     comments: number;
     shares: number;
+    views: number;
     hashtags: string[];
     location: string;
     createdAt: Date | string; // Allow both Date and string for API flexibility
@@ -57,19 +59,20 @@ export function VideoCard({
     setMounted(true);
   }, []);
 
-  const formatTimeAgo = () => {
+  const formatFullDate = (dateInput: Date | string) => {
     if (!mounted) return "";
 
-    const now = new Date();
     // Ensure createdAt is a Date object, whether it comes as string or Date
-    const createdAt = new Date(video.createdAt);
-    const diffInMs = now.getTime() - createdAt.getTime();
-    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-    const diffInDays = Math.floor(diffInHours / 24);
-
-    if (diffInDays > 0) return `${diffInDays}d`;
-    if (diffInHours > 0) return `${diffInHours}h`;
-    return "now";
+    const createdAt = new Date(dateInput);
+    
+    // Format as "Oct 5, 2025"
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short', 
+      day: 'numeric'
+    };
+    
+    return createdAt.toLocaleDateString('en-US', options);
   };
 
   useEffect(() => {
@@ -153,10 +156,18 @@ export function VideoCard({
     }
   };
 
-  const formatCount = (count: number) => {
+  const formatCount = (count: number | undefined) => {
+    if (!count || count === 0) return "0";
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
     if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
     return count.toString();
+  };
+
+  const formatDuration = (seconds: number | undefined) => {
+    if (!seconds || seconds === 0) return "0:00";
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   // Mobile Layout (TikTok-style)
@@ -207,8 +218,10 @@ export function VideoCard({
                   @{video.user.username}
                 </p>
                 <p className="text-gray-300 text-sm">
-                  {video.location} • {formatTimeAgo()}{" "}
-                  {formatTimeAgo() && "ago"}
+                  {formatCount(video.views)} views • {video.location}
+                </p>
+                <p className="text-gray-400 text-xs">
+                  {formatFullDate(video.createdAt)}
                 </p>
               </div>
             </div>
@@ -351,7 +364,7 @@ export function VideoCard({
 
         {/* Duration Badge */}
         <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
-          2:34
+          {formatDuration(video.duration)}
         </div>
 
         {/* Quick Actions (Netflix style) */}
@@ -429,11 +442,14 @@ export function VideoCard({
             {video.user.username}
           </p>
 
-          {/* Views and Time */}
-          <div className="flex items-center text-gray-400 text-xs space-x-1">
-            <span>{formatCount(video.likes + video.comments * 10)} views</span>
-            <span>•</span>
-            <span>{formatTimeAgo()}</span>
+          {/* Views and Date */}
+          <div className="flex flex-col space-y-1">
+            <div className="flex items-center text-gray-400 text-xs space-x-1">
+              <span>{formatCount(video.views)} views</span>
+            </div>
+            <div className="text-gray-500 text-xs">
+              {formatFullDate(video.createdAt)}
+            </div>
           </div>
         </div>
 

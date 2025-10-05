@@ -35,40 +35,15 @@ export async function GET() {
       take: 100, // Get recent videos for trending analysis
     });
 
-    // Calculate trending scores
+    // Sort trending videos by view count
     const trendingVideos = recentVideos
       .map((video) => {
-        const now = new Date();
-        const hoursOld =
-          (now.getTime() - video.createdAt.getTime()) / (1000 * 60 * 60);
-        const daysOld = Math.max(0.1, hoursOld / 24); // Minimum 0.1 to avoid division issues
-
-        // Engagement metrics
-        const likes = video._count.likes;
-        const comments = video._count.comments;
-        const views = video.views;
-        const shares = video.shares;
-
-        // Weighted engagement score
-        const engagementScore =
-          likes * 3 + comments * 5 + views * 1 + shares * 4;
-
-        // Trending algorithm: engagement per day with recency boost
-        const velocityScore = engagementScore / daysOld;
-
-        // Boost for very recent content (less than 24 hours)
-        const recencyBoost = hoursOld < 24 ? 2 : 1;
-
-        const trendingScore = velocityScore * recencyBoost;
-
         return {
           ...video,
-          trendingScore,
-          engagementScore,
-          velocity: velocityScore,
+          viewCount: video.views, // Use views as the primary sorting metric
         };
       })
-      .sort((a, b) => b.trendingScore - a.trendingScore)
+      .sort((a, b) => b.views - a.views) // Sort by views in descending order
       .slice(0, 20) // Top 20 trending videos
       .map((video) => ({
         id: video.id,
@@ -76,6 +51,7 @@ export async function GET() {
         description: video.description || "",
         videoUrl: video.videoUrl,
         thumbnailUrl: video.thumbnailUrl || video.videoUrl,
+        duration: video.duration,
         user: {
           id: video.user.id,
           username: video.user.username,
@@ -87,10 +63,11 @@ export async function GET() {
         likes: video._count.likes,
         comments: video._count.comments,
         shares: video.shares,
+        views: video.views,
         hashtags: video.hashtags,
         location: video.location || "Unknown",
         createdAt: video.createdAt.toISOString(),
-        trendingScore: Math.round(video.trendingScore * 100) / 100, // Round for display
+        viewCount: video.views, // Display view count for trending
       }));
 
     // Fallback trending videos if no recent videos
@@ -105,6 +82,7 @@ export async function GET() {
             "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
           thumbnailUrl:
             "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
+          duration: 178, // 2:58
           user: {
             id: "trending-user-1",
             username: "climate_leader",
@@ -115,10 +93,11 @@ export async function GET() {
           likes: 2800,
           comments: 340,
           shares: 156,
+          views: 12500,
           hashtags: ["#ClimateAction", "#Trending", "#Viral"],
           location: "Global",
           createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-          trendingScore: 95.7,
+          viewCount: 12500,
         },
         {
           id: "trending-2",
@@ -129,6 +108,7 @@ export async function GET() {
             "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4",
           thumbnailUrl:
             "https://images.unsplash.com/photo-1573164574511-73c773193279?w=400&h=600&fit=crop",
+          duration: 145, // 2:25
           user: {
             id: "trending-user-2",
             username: "student_voice",
@@ -139,10 +119,11 @@ export async function GET() {
           likes: 1950,
           comments: 245,
           shares: 89,
+          views: 8760,
           hashtags: ["#StudentRights", "#Education", "#Unity"],
           location: "Multiple Cities",
           createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-          trendingScore: 78.3,
+          viewCount: 8760,
         },
       ];
 
@@ -150,15 +131,15 @@ export async function GET() {
         success: true,
         videos: fallbackTrending,
         message: "Using trending fallback data",
-        algorithm: "engagement_velocity_with_recency_boost",
+        algorithm: "views_based_sorting",
       });
     }
 
     return NextResponse.json({
       success: true,
       videos: trendingVideos,
-      message: "Trending videos calculated from recent engagement",
-      algorithm: "engagement_velocity_with_recency_boost",
+      message: "Trending videos sorted by view count",
+      algorithm: "views_based_sorting",
       timeframe: "last_7_days",
     });
   } catch (error) {
@@ -174,6 +155,7 @@ export async function GET() {
           "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
+        duration: 178, // 2:58
         user: {
           id: "trending-user-1",
           username: "climate_leader",
@@ -184,10 +166,11 @@ export async function GET() {
         likes: 2800,
         comments: 340,
         shares: 156,
+        views: 12500,
         hashtags: ["#ClimateAction", "#Trending", "#Viral"],
         location: "Global",
         createdAt: new Date().toISOString(),
-        trendingScore: 95.7,
+        viewCount: 12500,
       },
     ];
 
@@ -195,7 +178,7 @@ export async function GET() {
       success: true,
       videos: fallbackTrending,
       message: "Using trending fallback data due to error",
-      algorithm: "fallback",
+      algorithm: "views_based_sorting",
     });
   } finally {
     await prisma.$disconnect();

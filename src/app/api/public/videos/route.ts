@@ -18,9 +18,11 @@ const mockVideos = [
       avatar:
         "https://images.unsplash.com/photo-1494790108755-2616b612b1e5?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 154, // 2:34 in seconds
     likes: 1250,
     comments: 89,
     shares: 45,
+    views: 8750,
     hashtags: ["#ClimateChange", "#Activism", "#GenZ"],
     location: "New York City",
     createdAt: "2025-10-01T00:00:00.000Z",
@@ -40,9 +42,11 @@ const mockVideos = [
       avatar:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 187, // 3:07 in seconds
     likes: 890,
     comments: 67,
     shares: 23,
+    views: 6420,
     hashtags: ["#EducationReform", "#StudentRights", "#Change"],
     location: "Berkeley, CA",
     createdAt: "2025-09-30T00:00:00.000Z",
@@ -62,9 +66,11 @@ const mockVideos = [
       avatar:
         "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 203, // 3:23 in seconds
     likes: 567,
     comments: 34,
     shares: 12,
+    views: 4200,
     hashtags: ["#Community", "#Sustainability", "#GreenLiving"],
     location: "Portland, OR",
     createdAt: "2025-09-28T00:00:00.000Z",
@@ -84,9 +90,11 @@ const mockVideos = [
       avatar:
         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 276, // 4:36 in seconds
     likes: 1100,
     comments: 156,
     shares: 67,
+    views: 9850,
     hashtags: ["#MentalHealth", "#YouthAdvocacy", "#Awareness"],
     location: "Austin, TX",
     createdAt: "2025-09-27T00:00:00.000Z",
@@ -106,9 +114,11 @@ const mockVideos = [
       avatar:
         "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 192, // 3:12 in seconds
     likes: 890,
     comments: 78,
     shares: 45,
+    views: 7320,
     hashtags: ["#DigitalRights", "#Privacy", "#TechActivism"],
     location: "San Francisco, CA",
     createdAt: "2025-09-25T00:00:00.000Z",
@@ -128,9 +138,11 @@ const mockVideos = [
       avatar:
         "https://images.unsplash.com/photo-1494790108755-2616b612b1e5?w=150&h=150&fit=crop&crop=face",
     },
+    duration: 168, // 2:48 in seconds
     likes: 723,
     comments: 45,
     shares: 28,
+    views: 5680,
     hashtags: ["#HousingJustice", "#AffordableHousing", "#Community"],
     location: "Seattle, WA",
     createdAt: "2025-09-24T00:00:00.000Z",
@@ -142,7 +154,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const videoId = searchParams.get("id");
     const hashtagsParam = searchParams.get("hashtags");
-    const sortParam = searchParams.get("sort") || "recent";
+    const sortParam = searchParams.get("sort") || "latest";
+    const limit = parseInt(searchParams.get("limit") || "50");
 
     // If requesting a specific video by ID
     if (videoId) {
@@ -176,6 +189,7 @@ export async function GET(request: Request) {
           description: video.description || "",
           videoUrl: video.videoUrl,
           thumbnailUrl: video.thumbnailUrl || video.videoUrl,
+          duration: video.duration,
           user: {
             id: video.user.id,
             username: video.user.username,
@@ -187,6 +201,7 @@ export async function GET(request: Request) {
           likes: video._count.likes,
           comments: video._count.comments,
           shares: video.shares,
+          views: video.views,
           hashtags: video.hashtags,
           location: video.location || "Unknown",
           createdAt: video.createdAt.toISOString(),
@@ -247,80 +262,111 @@ export async function GET(request: Request) {
       }),
     };
 
-    // Fetch all videos first, then sort by trending algorithm
-    const videos = await prisma.video.findMany({
-      where: whereClause,
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true,
+    // Fetch videos based on sort parameter
+    let videos;
+    
+    if (sortParam === "latest" || sortParam === "recent") {
+      // For latest videos, simply order by creation date
+      videos = await prisma.video.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+            },
           },
         },
-        _count: {
-          select: {
-            likes: true,
-            comments: true,
+        orderBy: {
+          createdAt: 'desc', // Most recent first
+        },
+        take: limit,
+      });
+    } else {
+      // For other sorting, get more videos for algorithm calculation
+      videos = await prisma.video.findMany({
+        where: whereClause,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              name: true,
+              avatar: true,
+            },
+          },
+          _count: {
+            select: {
+              likes: true,
+              comments: true,
+            },
           },
         },
-      },
-      take: 200, // Get more videos to properly calculate trending
-    });
+        take: 200, // Get more videos to properly calculate scores
+      });
+    }
 
-    // Calculate trending scores and sort
-    const videosWithTrendingScore = videos.map((video) => {
-      const now = new Date();
-      const videoAge =
-        (now.getTime() - video.createdAt.getTime()) / (1000 * 60 * 60); // Age in hours
-      const daysSinceCreated = Math.max(1, videoAge / 24); // Minimum 1 day to avoid division by zero
+    let sortedVideos;
+    
+    if (sortParam === "latest" || sortParam === "recent") {
+      // Videos are already sorted by creation date
+      sortedVideos = videos;
+    } else {
+      // Calculate scores and sort for other algorithms
+      const videosWithTrendingScore = videos.map((video) => {
+        const now = new Date();
+        const videoAge =
+          (now.getTime() - video.createdAt.getTime()) / (1000 * 60 * 60); // Age in hours
+        const daysSinceCreated = Math.max(1, videoAge / 24); // Minimum 1 day to avoid division by zero
 
-      // Engagement metrics
-      const likes = video._count.likes;
-      const comments = video._count.comments;
-      const views = video.views;
-      const shares = video.shares;
+        // Engagement metrics
+        const likes = video._count.likes;
+        const comments = video._count.comments;
+        const views = video.views;
+        const shares = video.shares;
 
-      // Calculate engagement score (weighted)
-      const engagementScore = likes * 3 + comments * 5 + views * 1 + shares * 4;
+        // Calculate engagement score (weighted)
+        const engagementScore = likes * 3 + comments * 5 + views * 1 + shares * 4;
 
-      // Trending algorithm: engagement divided by age (with decay)
-      // More recent videos get higher scores, but engagement also matters
-      let trendingScore = 0;
+        // Algorithm selection
+        let trendingScore = 0;
 
-      if (sortParam === "trending") {
-        // Trending: High engagement with recency boost
-        const recencyMultiplier = Math.max(
-          0.1,
-          1 / Math.sqrt(daysSinceCreated)
-        );
-        trendingScore = engagementScore * recencyMultiplier;
-      } else if (sortParam === "popular") {
-        // Popular: Pure engagement score
-        trendingScore = engagementScore;
-      } else {
-        // Recent: Time-based with slight engagement boost
-        trendingScore =
-          now.getTime() - video.createdAt.getTime() + engagementScore * 100;
-      }
-
-      return {
-        ...video,
-        trendingScore,
-        engagementScore,
-      };
-    });
-
-    // Sort by the calculated trending score
-    const sortedVideos = videosWithTrendingScore
-      .sort((a, b) => {
-        if (sortParam === "recent") {
-          return b.createdAt.getTime() - a.createdAt.getTime(); // Most recent first
+        if (sortParam === "trending") {
+          // Trending: High engagement with recency boost
+          const recencyMultiplier = Math.max(
+            0.1,
+            1 / Math.sqrt(daysSinceCreated)
+          );
+          trendingScore = engagementScore * recencyMultiplier;
+        } else if (sortParam === "popular") {
+          // Popular: Pure engagement score
+          trendingScore = engagementScore;
+        } else {
+          // Default: Time-based with slight engagement boost
+          trendingScore =
+            now.getTime() - video.createdAt.getTime() + engagementScore * 100;
         }
-        return b.trendingScore - a.trendingScore; // Highest trending score first
-      })
-      .slice(0, 50); // Take top 50
+
+        return {
+          ...video,
+          trendingScore,
+          engagementScore,
+        };
+      });
+
+      // Sort by the calculated score
+      sortedVideos = videosWithTrendingScore
+        .sort((a, b) => b.trendingScore - a.trendingScore)
+        .slice(0, limit); // Take requested amount
+    }
 
     // Transform the data to match our frontend interface
     const transformedVideos = sortedVideos.map((video) => ({
@@ -329,6 +375,7 @@ export async function GET(request: Request) {
       description: video.description || "",
       videoUrl: video.videoUrl,
       thumbnailUrl: video.thumbnailUrl || video.videoUrl, // Fallback to video URL if no thumbnail
+      duration: video.duration,
       user: {
         id: video.user.id,
         username: video.user.username,
@@ -340,14 +387,33 @@ export async function GET(request: Request) {
       likes: video._count.likes,
       comments: video._count.comments,
       shares: video.shares,
+      views: video.views,
       hashtags: video.hashtags,
       location: video.location || "Unknown",
       createdAt: video.createdAt.toISOString(),
     }));
 
     // If no videos in database, return mock data as fallback
-    const finalVideos =
-      transformedVideos.length > 0 ? transformedVideos : mockVideos;
+    let finalVideos = transformedVideos.length > 0 ? transformedVideos : mockVideos;
+    
+    // If using mock data, apply sorting and limit
+    if (transformedVideos.length === 0) {
+      if (sortParam === "latest" || sortParam === "recent") {
+        finalVideos = mockVideos
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, limit);
+      } else {
+        finalVideos = mockVideos.slice(0, limit);
+      }
+    }
+
+    // Debug logging
+    console.log("Database videos count:", transformedVideos.length);
+    console.log("Using mock data:", transformedVideos.length === 0);
+    if (finalVideos.length > 0) {
+      console.log("First video views:", finalVideos[0].views);
+      console.log("First video duration:", finalVideos[0].duration);
+    }
 
     return NextResponse.json({
       success: true,
@@ -373,7 +439,7 @@ export async function GET(request: Request) {
       message: "Using fallback data due to database error",
       filters: {
         hashtags: [],
-        sort: "recent",
+        sort: "latest",
       },
     });
   }

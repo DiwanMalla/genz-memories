@@ -152,6 +152,7 @@ export async function GET(request: Request) {
         description: video.description || "",
         videoUrl: video.videoUrl,
         thumbnailUrl: video.thumbnailUrl || video.videoUrl,
+        duration: video.duration,
         user: {
           id: video.user.id,
           username: video.user.username,
@@ -163,6 +164,7 @@ export async function GET(request: Request) {
         likes: video._count.likes,
         comments: video._count.comments,
         shares: video.shares,
+        views: video.views,
         hashtags: video.hashtags,
         location: video.location || "Unknown",
         createdAt: video.createdAt.toISOString(),
@@ -200,6 +202,7 @@ export async function GET(request: Request) {
         description: video.description || "",
         videoUrl: video.videoUrl,
         thumbnailUrl: video.thumbnailUrl || video.videoUrl,
+        duration: video.duration,
         user: {
           id: video.user.id,
           username: video.user.username,
@@ -211,6 +214,7 @@ export async function GET(request: Request) {
         likes: video._count.likes,
         comments: video._count.comments,
         shares: video.shares,
+        views: video.views,
         hashtags: video.hashtags,
         location: video.location || "Unknown",
         createdAt: video.createdAt.toISOString(),
@@ -260,6 +264,7 @@ export async function GET(request: Request) {
           "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4",
         thumbnailUrl:
           "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=600&fit=crop",
+        duration: 120, // 2:00
         user: {
           id: "rec-user-1",
           username: "content_curator",
@@ -270,6 +275,7 @@ export async function GET(request: Request) {
         likes: 150,
         comments: 25,
         shares: 12,
+        views: 1500,
         hashtags: ["#Discover", "#Community"],
         location: "Platform",
         createdAt: new Date().toISOString(),

@@ -23,11 +23,12 @@ model User {
   updatedAt DateTime @updatedAt
 
   // Social features
-  videos    Video[]
-  likes     Like[]
-  comments  Comment[]
-  followers Follow[] @relation("UserFollowers")
-  following Follow[] @relation("UserFollowing")
+  videos       Video[]
+  likes        Like[]
+  comments     Comment[]
+  commentLikes CommentLike[]
+  followers    Follow[] @relation("UserFollowers")
+  following    Follow[] @relation("UserFollowing")
   
   // Collections
   savedVideos SavedVideo[]
@@ -87,11 +88,26 @@ model Comment {
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  likes CommentLike[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("comments")
+}
+
+model CommentLike {
+  id        String @id @default(cuid())
+  userId    String
+  commentId String
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@map("comment_likes")
 }
 
 model Follow {
